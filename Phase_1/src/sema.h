@@ -14,12 +14,26 @@ class semaphore {
 private:
   char resource_name[64];
   int sema_value;
-  queue<char> *sema_queue;
+  queue<int> *sema_queue;
 
 public:
-  bool down() { return false; }
+  bool down() {
+    if (sema_value == 1) {
+      sema_value = 0;
+      return true;
+    } else {
+      return false;
+    }
+  }
 
-  bool up() { return false; }
+  bool up() {
+    if (sema_value == 0) {
+      sema_value = 1;
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   void dump(int level) {}
 };
