@@ -17,9 +17,9 @@ private:
   queue<char> *sema_queue;
 
 public:
-  bool down() {}
+  bool down() { return false; }
 
-  bool up() {}
+  bool up() { return false; }
 
   void dump(int level) {}
 };
