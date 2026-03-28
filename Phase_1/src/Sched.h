@@ -35,14 +35,14 @@ struct TCB {
 
 class Scheduler {
 private:
-  TCB process_table;
+  TCB *process_table;
 
 public:
   Scheduler();
 
   ~Scheduler();
 
-  void create_task();
+  int create_task();
 
   void kill_task();
 
