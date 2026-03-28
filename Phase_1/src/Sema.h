@@ -50,10 +50,12 @@ public:
   void up() {
     pthread_mutex_lock(&lock);
 
-    if (sema_value <= 0) {
-      if (!sema_queue {
-
-      }
+    if (sema_value <= 0 && !sema_queue->empty()) {
+      sema_queue->pop();
+      pthread_cond_signal(&cond);
+    } else {
+      sema_value++;
+      pthread_mutex_unlock(&lock);
     }
   }
 
