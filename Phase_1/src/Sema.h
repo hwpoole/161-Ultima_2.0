@@ -20,7 +20,8 @@ private:
   pthread_cond_t cond;
 
 public:
-  Semaphore(int initialValue) : sema_value(initialValue) {
+  Semaphore(char Name[64]) : resource_name() {
+    sema_value = 1;
     pthread_mutex_init(&lock, nullptr);
     pthread_cond_init(&cond, nullptr);
   }
@@ -46,7 +47,15 @@ public:
     pthread_mutex_unlock(&lock);
   }
 
-  void up() {}
+  void up() {
+    pthread_mutex_lock(&lock);
+
+    if (sema_value <= 0) {
+      if (!sema_queue {
+
+      }
+    }
+  }
 
   void dump(int level) {}
 };
