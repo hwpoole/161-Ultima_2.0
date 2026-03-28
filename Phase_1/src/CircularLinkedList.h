@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <iostream>
+
 using namespace std;
 
 template <typename T> class Node {
@@ -159,17 +161,47 @@ public:
     } else {
       Node<T> *temp = head;
       Node<T> *NewTail = head;
+
       while (temp->next != head) {
         NewTail = temp;
         temp = temp->next;
       }
+
       tail = NewTail;
       tail->next = head;
       temp->next = nullptr;
     }
   }
 
+  /* bool is_empty() {...}
+   *
+   * Returns the empty bool.
+   */
   bool is_empty() { return (empty); }
 
-  void dump();
+  /* void dump() {...}
+   *
+   * Prints the current status of the list.
+   *
+   * 1. Checks if the list is empty.
+   *    - If so, print that.
+   * 2. Else,
+   *    - Iterates through the list.
+   *    - Prints data from every node.
+   *    - Stops when it hits the head again.
+   */
+  void dump() {
+    if (empty) {
+      cout << "List is empty" << endl;
+    } else {
+      Node<T> *temp = head;
+
+      do {
+        cout << temp->data << " --> ";
+        temp = temp->next;
+      } while (temp != head);
+
+      cout << head->data << endl;
+    }
+  }
 };
