@@ -20,6 +20,19 @@
 
 using namespace std;
 
+/* template class Node
+ *
+ * Public:
+ *
+ * 1. T data.
+ *    - Hold's the node's data.
+ * 2. Node<T> *next.
+ *    - Pointer to the next node.
+ * 3. Node(T data).
+ *    - Constructor, requiring T data as an argument.
+ *    - Sets data as data and the next node as a nullptr.
+ *    - As such, creates a node with no relation to other nodes.
+ */
 template <typename T> class Node {
 public:
   T data;
@@ -31,6 +44,20 @@ public:
   }
 };
 
+/* template class CircularLinkedList
+ *
+ * Private:
+ *
+ * 1. Node<T> *head.
+ *    - Pointer to the head of the list.
+ * 2. Node<T> *tail.
+ *    - Pointer to the tail of the list.
+ * 3. bool empty.
+ *    - A bool for the empty status of the list.
+ *
+ * Public:
+ *
+ */
 template <typename T> class CircularLinkedList {
 private:
   Node<T> *head;
@@ -38,7 +65,13 @@ private:
   bool empty;
 
 public:
-  CircularLinkedList();
+  CircularLinkedList() {
+    head = nullptr;
+    tail = nullptr;
+    empty = true;
+  };
+
+  ~CircularLinkedList() {}
 
   /* void insert_front(T value) {...}
    *
@@ -53,7 +86,7 @@ public:
    *    - Update head to NewNode.
    */
   void insert_front(T value) {
-    Node<T> *NewNode = Node(value);
+    auto NewNode = make_unique<Node<T>>(value);
 
     if (empty) {
       head = NewNode;
@@ -103,6 +136,7 @@ public:
       insert_front(value);
     } else {
       Node<T> *NewNode = Node(value);
+
       NewNode->next = head;
       tail->next = NewNode;
       tail = NewNode;
