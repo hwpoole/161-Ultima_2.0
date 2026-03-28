@@ -5,11 +5,13 @@
  */
 
 #include "Sema.h"
+#include <cstring>
 #include <pthread.h>
 #include <queue>
 
-Semaphore::Semaphore(char Name[64]) : resource_name() {
-  sema_value = 1;
+Semaphore::Semaphore(const char *Name) {
+  strncpy(resource_name, Name, 63);
+  resource_name[63] = '\0';
   pthread_mutex_init(&lock, nullptr);
   pthread_cond_init(&cond, nullptr);
 }
@@ -43,4 +45,21 @@ void Semaphore::up() {
   pthread_mutex_unlock(&lock);
 }
 
-void dump(int level) {}
+void Semaphore::dump() {
+  pthread_mutex_lock(&lock);
+
+  cout << "Resource: " << resource_name << endl;
+  cout << "Sema_value: " << sema_value << endl;
+  cout << "Sema_queue: ";
+
+  queue<pthread_t> print_queue = sema_queue;
+
+  while (!print_queue.empty()) {
+    cout << (unsigned long)print_queue.front();
+    print_queue.pop();
+    cout << " --> ";
+  }
+  cout << endl;
+
+  pthread_mutex_unlock(&lock);
+}
