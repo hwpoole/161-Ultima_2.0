@@ -25,23 +25,9 @@ public:
     pthread_cond_init(&cond, nullptr);
   }
 
-  bool down() {
-    if (sema_value == 1) {
-      sema_value = 0;
-      return true;
-    } else {
-      return false;
-    }
-  }
+  void down() {}
 
-  bool up() {
-    if (sema_value == 0) {
-      sema_value = 1;
-      return true;
-    } else {
-      return false;
-    }
-  }
+  void up() {}
 
   void dump(int level) {}
 };
