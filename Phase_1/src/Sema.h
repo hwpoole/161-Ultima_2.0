@@ -10,7 +10,7 @@
 
 using namespace std;
 
-class semaphore {
+class Semaphore {
 private:
   char resource_name[64];
   int sema_value;
