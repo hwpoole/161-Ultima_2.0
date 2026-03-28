@@ -52,7 +52,7 @@ public:
 
     if (sema_value <= 0 && !sema_queue.empty()) {
       sema_queue.pop();
-      pthread_cond_signal(&cond);
+      pthread_cond_broadcast(&cond);
     } else {
       sema_value++;
       pthread_mutex_unlock(&lock);
