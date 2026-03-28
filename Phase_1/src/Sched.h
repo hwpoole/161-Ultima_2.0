@@ -38,7 +38,7 @@ private:
   int current_task;
   long current_quantum;
   int next_available_task_id;
-  CircularLinkedList<TCB> TCBList;
+  CircularLinkedList<TCB *> TCBList;
 
 public:
   Scheduler();
