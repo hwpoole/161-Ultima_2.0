@@ -98,6 +98,10 @@ public:
     if (empty) {
       insert_front(value);
     } else {
+      Node<T> *NewNode = Node(value);
+      NewNode->next = head;
+      tail->next = NewNode;
+      tail = NewNode;
     }
   }
 
