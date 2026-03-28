@@ -2,13 +2,10 @@
  * Ultima 2.0
  *
  * This header file shows the private and public resources of the
- * CircularLinkedList class.
+ * CircularLinkedList class and its supporting class, Node.
  *
- * Of note to the public, who wish to use this class:
- *   1.
- *
- * Of note on the private resources:
- *   1.
+ * As there are two classes in this file, their documentation is placed at their
+ * definitions, rather than up here.
  *
  * Hunter Poole
  * 03-28-2026
@@ -65,7 +62,17 @@ public:
  *    - Insert a node with value of value in the front.
  * 4. void insert_at(T value, int position)
  *    - Insert a node with value of value in the specified position.
- *
+ * 5. void insert_end(T value)
+ *    - Insert a node with value of value at the end.
+ * 6. void remove_front()
+ *    - Removes the front node.
+ * 7. void remove_end()
+ *    - Removes the end node.
+ * 8. bool is_empty()
+ *    - Returns the empty bool.
+ * 9. void dump()
+ *    - print method.
+ *    - Dumps the current state of the CircularLinkedList.
  */
 template <typename T> class CircularLinkedList {
 private:
@@ -74,13 +81,32 @@ private:
   bool empty;
 
 public:
+  /* CircularLinkedList() {...}
+   *
+   * No-arg constructor.
+   *
+   * Sets:
+   * Head to null.
+   * Tail to null.
+   * empty = true.
+   */
   CircularLinkedList() {
     head = nullptr;
     tail = nullptr;
     empty = true;
   };
 
-  ~CircularLinkedList() {}
+  /* ~CircularLinkedList() {...}
+   *
+   * No-arg destructor.
+   *
+   * Currently performs no actions.
+   */
+  ~CircularLinkedList() {
+    while (!empty) {
+      remove_front();
+    }
+  }
 
   /* void insert_front(T value) {...}
    *
@@ -141,6 +167,18 @@ public:
     }
   }
 
+  /* void insert_end(T value) {...}
+   *
+   * Inserts a node at the end of the list.
+   *
+   * 1. Checks if the list is empty.
+   *    - If so, call insert_front(value).
+   * 2. Else...
+   *    - Make a NewNode.
+   *    - Set NewNode's next to be the head.
+   *    - Set tail's next to be NewNode.
+   *    - Set tail = NewNode.
+   */
   void insert_end(T value) {
     if (empty) {
       insert_front(value);
