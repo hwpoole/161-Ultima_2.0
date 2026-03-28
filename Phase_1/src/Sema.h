@@ -49,14 +49,10 @@ public:
 
   void up() {
     pthread_mutex_lock(&lock);
+    sema_value++;
 
-    if (sema_value <= 0 && !sema_queue.empty()) {
-      sema_queue.pop();
-      pthread_cond_broadcast(&cond);
-    } else {
-      sema_value++;
-      pthread_mutex_unlock(&lock);
-    }
+    pthread_cond_broadcast(&cond);
+    pthread_mutex_unlock(&lock);
   }
 
   void dump(int level) {}
