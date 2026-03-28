@@ -5,6 +5,7 @@
  * It is recommended you view Sema.h for information on how to use the Semaphore
  * class.
  *
+ * Hunter Poole
  * 03-27-2026
  */
 
