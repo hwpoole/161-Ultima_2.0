@@ -16,7 +16,22 @@
 
 #pragma once
 
+#include <queue>
+#include <string>
+
 using namespace std;
+
+const string READY = "READY";
+const string RUNNING = "RUNNING";
+const string BLOCKED = "BLOCKED";
+const string DEAD = "DEAD";
+
+struct TCB {
+  int task_id;
+  string state;
+  clock_t start_time;
+  TCB *next;
+};
 
 class Scheduler {
 private:
