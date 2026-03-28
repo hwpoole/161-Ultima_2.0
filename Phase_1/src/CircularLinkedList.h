@@ -25,3 +25,21 @@ public:
 
   Node(T data);
 };
+
+template <typename T> class CircularLinkedList {
+private:
+  Node<T> *head;
+
+public:
+  CircularLinkedList();
+
+  void insert_front(T value);
+
+  void insert_end(T value);
+
+  void remove_first();
+
+  void remove_end();
+
+  void dump();
+};
