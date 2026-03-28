@@ -35,6 +35,8 @@ public:
 
   void insert_front(T value);
 
+  void insert_at(T value, int position);
+
   void insert_end(T value);
 
   void remove_first();
