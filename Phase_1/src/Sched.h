@@ -38,6 +38,10 @@ private:
   TCB process_table;
 
 public:
+  Scheduler();
+
+  ~Scheduler();
+
   void create_task();
 
   void kill_task();
