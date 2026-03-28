@@ -33,6 +33,7 @@ template <typename T> class CircularLinkedList {
 private:
   Node<T> *head;
   Node<T> *tail;
+  bool empty;
 
 public:
   CircularLinkedList();
@@ -52,7 +53,7 @@ public:
   void insert_front(T value) {
     Node<T> *NewNode = Node(value);
 
-    if (is_empty()) {
+    if (empty) {
       head = NewNode;
       tail = NewNode;
       head->next = tail;
@@ -78,7 +79,7 @@ public:
    *    - Updates temp to point to NewNode.
    */
   void insert_at(T value, int position) {
-    if (position <= 1 || is_empty()) {
+    if (position <= 1 || empty) {
       insert_front(value);
     } else {
       Node<T> *NewNode = Node(value);
@@ -93,13 +94,18 @@ public:
     }
   }
 
-  void insert_end(T value);
+  void insert_end(T value) {
+    if (empty) {
+      insert_front(value);
+    } else {
+    }
+  }
 
   void remove_front();
 
   void remove_end();
 
-  bool is_empty();
+  bool is_empty() { return (empty); }
 
   void dump();
 };
