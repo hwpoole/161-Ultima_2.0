@@ -64,7 +64,34 @@ public:
     }
   }
 
-  void insert_at(T value, int position);
+  /* void insert_at(T value, int position) {...}
+   *
+   * Inserts a node at a specified position.
+   *
+   * 1. Checks if position is <= 1 or if CLL is empty.
+   *    1a. If so, calls insert_front with the provided value.
+   * 2. Else...
+   *    - Creates NewNode with value.
+   *    - Creates temp node at the head.
+   *    - Iterates through the list until it finds the position.
+   *    - Updates NewNode to point to temp's next node.
+   *    - Updates temp to point to NewNode.
+   */
+  void insert_at(T value, int position) {
+    if (position <= 1 || is_empty()) {
+      insert_front(value);
+    } else {
+      Node<T> *NewNode = Node(value);
+      Node<T> *temp = head;
+
+      for (int i = 1; i < position - 1 && temp->next != head; i++) {
+        temp = temp->next;
+      }
+
+      NewNode->next = temp->next;
+      temp->next = NewNode;
+    }
+  }
 
   void insert_end(T value);
 
