@@ -154,7 +154,7 @@ public:
       insert_front(value);
     } else {
       Node<T> *NewNode = new Node<T>(value);
-      Node<T> temp = head;
+      Node<T> *temp = head;
 
       for (int i = 1; i < position - 1 && temp->next != head; i++) {
         temp = temp->next;
