@@ -95,7 +95,7 @@ public:
 
   void insert_end(T value);
 
-  void remove_first();
+  void remove_front();
 
   void remove_end();
 
