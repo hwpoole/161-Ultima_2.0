@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <queue>
+#include "CircularLinkedList.h"
 #include <string>
 
 using namespace std;
@@ -30,7 +30,6 @@ struct TCB {
   int task_id;
   string state;
   clock_t start_time;
-  TCB *next;
 };
 
 class Scheduler {
@@ -39,6 +38,7 @@ private:
   int current_task;
   long current_quantum;
   int next_available_task_id;
+  CircularLinkedList<TCB> TCBList;
 
 public:
   Scheduler();

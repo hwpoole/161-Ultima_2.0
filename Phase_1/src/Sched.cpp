@@ -22,7 +22,11 @@ Scheduler::~Scheduler() {}
 
 int Scheduler::create_task() {
   process_table->task_id = next_available_task_id;
-  return 0;
+  process_table->state = READY;
+  TCBList.insert_end(process_table);
+
+  next_available_task_id++;
+  return (next_available_task_id - 1);
 }
 
 void Scheduler::kill_task() {}
