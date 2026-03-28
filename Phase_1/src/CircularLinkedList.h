@@ -58,6 +58,8 @@ public:
       tail = NewNode;
       head->next = tail;
       tail->next = head;
+
+      empty = false;
     } else {
       NewNode->next = head;
       tail->next = NewNode;
@@ -105,7 +107,31 @@ public:
     }
   }
 
-  void remove_front();
+  /* void remove_front() {...}
+   *
+   * Removes a node from the front of the list.
+   *
+   * 1. Checks if the list is empty.
+   *    - If so, do nothing.
+   * 2. Else, if the list has only one node...
+   *    - Dereference that node.
+   *    - Set empty = true.
+   * 3. Else,
+   *    - Point tail to head's next.
+   *    - Point head to head's next.
+   */
+  void remove_front() {
+    if (empty) {
+      return;
+    } else if (head->next == tail) {
+      head = nullptr;
+      tail = nullptr;
+      empty = true;
+    } else {
+      tail->next = head->next;
+      head = head->next;
+    }
+  }
 
   void remove_end();
 
