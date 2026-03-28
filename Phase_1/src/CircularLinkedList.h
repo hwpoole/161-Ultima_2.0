@@ -133,7 +133,41 @@ public:
     }
   }
 
-  void remove_end();
+  /* void remove_end() {...}
+   *
+   * Removes a node from the end of the list.
+   *
+   * 1. Checks if the list is empty.
+   *    - If so, do nothing.
+   * 2. Else, if the list has only one node...
+   *    - Dereference that node.
+   *    - Set empty = true.
+   * 3. Else,
+   *    - Make two Node pointers.
+   *    - Advance both. One to tail and one previous the tail.
+   *    - Point the NewTail to the head.
+   *    - Make the old tail's reference to the head null.
+   *    - Set tail = NewTail.
+   */
+  void remove_end() {
+    if (empty) {
+      return;
+    } else if (head->next == tail) {
+      head = nullptr;
+      tail = nullptr;
+      empty = true;
+    } else {
+      Node<T> *temp = head;
+      Node<T> *NewTail = head;
+      while (temp->next != head) {
+        NewTail = temp;
+        temp = temp->next;
+      }
+      tail = NewTail;
+      tail->next = head;
+      temp->next = nullptr;
+    }
+  }
 
   bool is_empty() { return (empty); }
 
