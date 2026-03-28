@@ -34,16 +34,16 @@ public:
   void down() {
     pthread_mutex_lock(&lock);
 
-    if (sema_value >= 1) {
-      sema_value--;
-    } else {
-      pthread_t this_thread = pthread_self();
-      sema_queue.push(this_thread);
+    pthread_t this_thread = pthread_self();
+    sema_queue.push(this_thread);
 
-      do {
-        pthread_cond_wait(&cond, &lock);
-      } while (sema_value < 0);
+    while (sema_value <= 0 || sema_queue.front() != this_thread) {
+      pthread_cond_wait(&cond, &lock);
     }
+
+    sema_queue.pop();
+    sema_value--;
+
     pthread_mutex_unlock(&lock);
   }
 
