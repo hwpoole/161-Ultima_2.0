@@ -15,7 +15,7 @@ class Semaphore {
 private:
   char resource_name[64];
   int sema_value;
-  queue<pthread_t> *sema_queue;
+  queue<pthread_t> sema_queue;
   pthread_mutex_t lock;
   pthread_cond_t cond;
 
@@ -38,7 +38,7 @@ public:
       sema_value--;
     } else {
       pthread_t this_thread = pthread_self();
-      sema_queue->push(this_thread);
+      sema_queue.push(this_thread);
 
       do {
         pthread_cond_wait(&cond, &lock);
@@ -50,8 +50,8 @@ public:
   void up() {
     pthread_mutex_lock(&lock);
 
-    if (sema_value <= 0 && !sema_queue->empty()) {
-      sema_queue->pop();
+    if (sema_value <= 0 && !sema_queue.empty()) {
+      sema_queue.pop();
       pthread_cond_signal(&cond);
     } else {
       sema_value++;
