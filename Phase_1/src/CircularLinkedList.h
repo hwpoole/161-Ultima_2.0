@@ -273,6 +273,12 @@ public:
    */
   bool is_empty() { return (empty); }
 
+  T get_next() {}
+
+  T get_head() {}
+
+  T get_tail() {}
+
   /* void dump() {...}
    *
    * Prints the current status of the list.
