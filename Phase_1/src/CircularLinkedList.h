@@ -121,14 +121,13 @@ public:
    *    - Update head to NewNode.
    */
   void insert_front(T value) {
-    auto NewNode = make_unique<Node<T>>(value);
+    Node<T> *NewNode = new Node<T>(value);
 
     if (empty) {
       head = NewNode;
       tail = NewNode;
       head->next = tail;
       tail->next = head;
-
       empty = false;
     } else {
       NewNode->next = head;
@@ -154,9 +153,8 @@ public:
     if (position <= 1 || empty) {
       insert_front(value);
     } else {
-      auto NewNode = make_unique<Node<T>>(value);
-      auto temp = make_unique<Node<T>>();
-      temp = head;
+      Node<T> NewNode = new Node<T>(value);
+      Node<T> temp = head;
 
       for (int i = 1; i < position - 1 && temp->next != head; i++) {
         temp = temp->next;
@@ -183,7 +181,7 @@ public:
     if (empty) {
       insert_front(value);
     } else {
-      auto NewNode = make_unique<Node<T>>(value);
+      Node<T> *NewNode = new Node<T>(value);
 
       NewNode->next = head;
       tail->next = NewNode;
@@ -207,7 +205,7 @@ public:
   void remove_front() {
     if (empty) {
       return;
-    } else if (head->next == tail) {
+    } else if (head == tail) {
       head = nullptr;
       tail = nullptr;
       empty = true;
@@ -241,10 +239,8 @@ public:
       tail = nullptr;
       empty = true;
     } else {
-      auto temp = make_unique<Node<T>>(0);
-      auto NewTail = make_unique<Node<T>>(0);
-      temp = head;
-      NewTail = head;
+      Node<T> *temp = head;
+      Node<T> *NewTail = head;
 
       while (temp->next != head) {
         NewTail = temp;
@@ -278,7 +274,7 @@ public:
     if (empty) {
       cout << "List is empty" << endl;
     } else {
-      auto temp = make_unique<Node<T>>(0);
+      Node<T> *temp = head;
       temp = head;
 
       do {
