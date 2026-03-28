@@ -20,17 +20,6 @@
  *  5. void dump();
  *      - Call this to see the current contents and/or state of the Semaphore.
  *
- * 03-27-2026
- */
-
-#pragma once
-
-#include <pthread.h>
-#include <queue>
-
-using namespace std;
-
-/* Semaphore class.
  *
  * Of note on the private resources:
  *
@@ -50,7 +39,17 @@ using namespace std;
  * 5. pthread_cond_t cond;
  *    - A condition on which all threads will wait.
  *    - Used to signal that a thread is good to go.
+ *
+ * Hunter Poole
+ * 03-28-2026
  */
+
+#pragma once
+
+#include <pthread.h>
+#include <queue>
+
+using namespace std;
 
 class Semaphore {
 private:
