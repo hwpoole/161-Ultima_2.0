@@ -153,7 +153,7 @@ public:
     if (position <= 1 || empty) {
       insert_front(value);
     } else {
-      Node<T> NewNode = new Node<T>(value);
+      Node<T> *NewNode = new Node<T>(value);
       Node<T> temp = head;
 
       for (int i = 1; i < position - 1 && temp->next != head; i++) {
@@ -205,7 +205,11 @@ public:
   void remove_front() {
     if (empty) {
       return;
-    } else if (head == tail) {
+    }
+
+    Node<T> *OldHead = head;
+
+    if (head == tail) {
       head = nullptr;
       tail = nullptr;
       empty = true;
@@ -213,6 +217,8 @@ public:
       tail->next = head->next;
       head = head->next;
     }
+
+    delete OldHead;
   }
 
   /* void remove_end() {...}
@@ -234,7 +240,11 @@ public:
   void remove_end() {
     if (empty) {
       return;
-    } else if (head->next == tail) {
+    }
+
+    Node<T> *OldTail = tail;
+
+    if (head == tail) {
       head = nullptr;
       tail = nullptr;
       empty = true;
@@ -251,6 +261,8 @@ public:
       tail->next = head;
       temp->next = nullptr;
     }
+
+    delete OldTail;
   }
 
   /* bool is_empty() {...}
