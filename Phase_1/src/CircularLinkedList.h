@@ -100,7 +100,7 @@ public:
    *
    * No-arg destructor.
    *
-   * Currently performs no actions.
+   * Removes nodes from the front until the list is empty.
    */
   ~CircularLinkedList() {
     while (!empty) {
