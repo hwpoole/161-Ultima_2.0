@@ -23,7 +23,10 @@ public:
   T data;
   Node<T> *next;
 
-  Node(T data);
+  Node(T data) {
+    this->data = data;
+    this->next = nullptr;
+  }
 };
 
 template <typename T> class CircularLinkedList {
