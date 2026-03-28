@@ -10,7 +10,7 @@
  */
 
 #include "Sched.h"
-#include <queue>
+#include "CircularLinkedList.h"
 
 Scheduler::Scheduler() {
   current_task = -1;
@@ -20,7 +20,10 @@ Scheduler::Scheduler() {
 
 Scheduler::~Scheduler() {}
 
-int Scheduler::create_task() { return 0; }
+int Scheduler::create_task() {
+  process_table->task_id = next_available_task_id;
+  return 0;
+}
 
 void Scheduler::kill_task() {}
 
