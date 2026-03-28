@@ -12,7 +12,11 @@
 #include "Sched.h"
 #include <queue>
 
-Scheduler::Scheduler() {}
+Scheduler::Scheduler() {
+  current_task = -1;
+  next_available_task_id = 0;
+  current_quantum = 300;
+}
 
 Scheduler::~Scheduler() {}
 

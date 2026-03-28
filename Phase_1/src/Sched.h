@@ -36,6 +36,9 @@ struct TCB {
 class Scheduler {
 private:
   TCB *process_table;
+  int current_task;
+  long current_quantum;
+  int next_available_task_id;
 
 public:
   Scheduler();
