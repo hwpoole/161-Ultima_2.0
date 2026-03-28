@@ -201,6 +201,7 @@ public:
    * 3. Else,
    *    - Point tail to head's next.
    *    - Point head to head's next.
+   * 4. Delete the old head.
    */
   void remove_front() {
     if (empty) {
@@ -236,6 +237,7 @@ public:
    *    - Point the NewTail to the head.
    *    - Make the old tail's reference to the head null.
    *    - Set tail = NewTail.
+   * 4. Delete the old tail.
    */
   void remove_end() {
     if (empty) {
