@@ -1,4 +1,4 @@
-/* Semaphore Class
+/* Semaphore Class Header File
  * Ultima 2.0
  *
  * 03-20-2026
@@ -20,40 +20,13 @@ private:
   pthread_cond_t cond;
 
 public:
-  Semaphore(char Name[64]) : resource_name() {
-    sema_value = 1;
-    pthread_mutex_init(&lock, nullptr);
-    pthread_cond_init(&cond, nullptr);
-  }
+  Semaphore(char Name[64]);
 
-  ~Semaphore() {
-    pthread_mutex_destroy(&lock);
-    pthread_cond_destroy(&cond);
-  }
+  ~Semaphore();
 
-  void down() {
-    pthread_mutex_lock(&lock);
+  void down();
 
-    pthread_t this_thread = pthread_self();
-    sema_queue.push(this_thread);
-
-    while (sema_value <= 0 || sema_queue.front() != this_thread) {
-      pthread_cond_wait(&cond, &lock);
-    }
-
-    sema_queue.pop();
-    sema_value--;
-
-    pthread_mutex_unlock(&lock);
-  }
-
-  void up() {
-    pthread_mutex_lock(&lock);
-    sema_value++;
-
-    pthread_cond_broadcast(&cond);
-    pthread_mutex_unlock(&lock);
-  }
+  void up();
 
   void dump(int level) {}
 };
