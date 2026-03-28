@@ -44,10 +44,10 @@ public:
    * 1. Creates a pointer to NewNode with value of T value.
    * 2. Checks if the list is empty.
    *    2a. If so, head & tail = NewNode.
-   *    3a. Else...
-   *        - Point NewNode to head.
-   *        - Point tail to NewNode.
-   *        - Update head to NewNode.
+   * 3. Else...
+   *    - Point NewNode to head.
+   *    - Point tail to NewNode.
+   *    - Update head to NewNode.
    */
   void insert_front(T value) {
     Node<T> *NewNode = Node(value);
