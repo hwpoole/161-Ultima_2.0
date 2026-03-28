@@ -13,3 +13,23 @@
  * Hunter Poole
  * 03-28-2026
  */
+
+#pragma once
+
+using namespace std;
+
+class Scheduler {
+private:
+  TCB process_table;
+
+public:
+  void create_task();
+
+  void kill_task();
+
+  void yield();
+
+  void garbage_collect();
+
+  void dump();
+};
