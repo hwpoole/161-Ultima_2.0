@@ -25,6 +25,11 @@ public:
     pthread_cond_init(&cond, nullptr);
   }
 
+  ~Semaphore() {
+    pthread_mutex_destroy(&lock);
+    pthread_cond_destroy(&cond);
+  }
+
   void down() {}
 
   void up() {}
