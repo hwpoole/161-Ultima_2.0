@@ -21,9 +21,10 @@ Scheduler::Scheduler() {
 Scheduler::~Scheduler() {}
 
 int Scheduler::create_task() {
-  process_table->task_id = next_available_task_id;
-  process_table->state = READY;
-  TCBList.insert_end(process_table);
+  TCB *NewTask = new TCB();
+  NewTask->task_id = next_available_task_id;
+  NewTask->state = READY;
+  TCBList.insert_end(NewTask);
 
   next_available_task_id++;
   return (next_available_task_id - 1);
