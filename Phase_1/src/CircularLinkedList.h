@@ -13,3 +13,15 @@
  * Hunter Poole
  * 03-28-2026
  */
+
+#pragma once
+
+using namespace std;
+
+template <typename T> class Node {
+public:
+  T data;
+  Node<T> *next;
+
+  Node(T data);
+};
