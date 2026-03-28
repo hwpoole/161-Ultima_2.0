@@ -119,8 +119,9 @@ public:
     if (position <= 1 || empty) {
       insert_front(value);
     } else {
-      Node<T> *NewNode = Node(value);
-      Node<T> *temp = head;
+      auto NewNode = make_unique<Node<T>>(value);
+      auto temp = make_unique<Node<T>>();
+      temp = head;
 
       for (int i = 1; i < position - 1 && temp->next != head; i++) {
         temp = temp->next;
@@ -135,7 +136,7 @@ public:
     if (empty) {
       insert_front(value);
     } else {
-      Node<T> *NewNode = Node(value);
+      auto NewNode = make_unique<Node<T>>(value);
 
       NewNode->next = head;
       tail->next = NewNode;
@@ -193,8 +194,10 @@ public:
       tail = nullptr;
       empty = true;
     } else {
-      Node<T> *temp = head;
-      Node<T> *NewTail = head;
+      auto temp = make_unique<Node<T>>(0);
+      auto NewTail = make_unique<Node<T>>(0);
+      temp = head;
+      NewTail = head;
 
       while (temp->next != head) {
         NewTail = temp;
@@ -228,7 +231,8 @@ public:
     if (empty) {
       cout << "List is empty" << endl;
     } else {
-      Node<T> *temp = head;
+      auto temp = make_unique<Node<T>>(0);
+      temp = head;
 
       do {
         cout << temp->data << " --> ";
