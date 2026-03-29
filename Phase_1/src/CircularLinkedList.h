@@ -52,28 +52,43 @@ public:
  *    - Pointer to the tail of the list.
  * 3. bool empty.
  *    - A bool for the empty status of the list.
+ * 4. int length.
+ *    - Stores the current length (size) of the list.
  *
  * Public:
  *
- * 1. CircularLinkedList()
- *    - No-arg constructor.
- * 2. ~CircularLinkedList()
- *    - No-arg destructor.
- * 3. void insert_front(T value)
- *    - Insert a node with value of value in the front.
- * 4. void insert_at(T value, int position)
- *    - Insert a node with value of value in the specified position.
- * 5. void insert_end(T value)
- *    - Insert a node with value of value at the end.
- * 6. void remove_front()
- *    - Removes the front node.
- * 7. void remove_end()
- *    - Removes the end node.
- * 8. bool is_empty()
- *    - Returns the empty bool.
- * 9. void dump()
- *    - print method.
- *    - Dumps the current state of the CircularLinkedList.
+ * 1.  CircularLinkedList()
+ *     - No-arg constructor.
+ * 2.  ~CircularLinkedList()
+ *     - No-arg destructor.
+ * 3.  void insert_front(T value)
+ *     - Insert a node with value of value in the front.
+ * 4.  void insert_at(T value, int position)
+ *     - Insert a node with value of value in the specified position.
+ * 5.  void insert_end(T value)
+ *     - Insert a node with value of value at the end.
+ * 6.  void remove_front()
+ *     - Removes the front node.
+ * 7.  void remove_end()
+ *     - Removes the end node.
+ * 8.  bool is_empty()
+ *     - Returns the empty bool.
+ * 9.  int size()
+ *     - Returns the int length.
+ * 10. void advance()
+ *     - Advances the list to have a new head and tail.
+ *     - Useful for a "round robin clock scheduling algorithm."
+ * 11. T get_front()
+ *     - Returns the data portion of the head.
+ * 12. int get_pos(T key)
+ *     - Returns the position of the node that matches the key, if any.
+ * 13. T get_next()
+ *     - Returns the data portion of the node after the head.
+ * 14. T get_end()
+ *     - Returns the data portion of the tail.
+ * 9.  void dump()
+ *     - print method.
+ *     - Dumps the current state of the CircularLinkedList.
  */
 template <typename T> class CircularLinkedList {
 private:
@@ -91,6 +106,7 @@ public:
    * Head to null.
    * Tail to null.
    * empty = true.
+   * length = 0.
    */
   CircularLinkedList() {
     head = nullptr;
@@ -118,10 +134,12 @@ public:
    * 1. Creates a pointer to NewNode with value of T value.
    * 2. Checks if the list is empty.
    *    2a. If so, head & tail = NewNode.
+   *    2b. Then, empty = false.
    * 3. Else...
    *    - Point NewNode to head.
    *    - Point tail to NewNode.
    *    - Update head to NewNode.
+   * 4. Increment length.
    */
   void insert_front(T value) {
     Node<T> *NewNode = new Node<T>(value);
@@ -153,6 +171,7 @@ public:
    *    - Iterates through the list until it finds the position.
    *    - Updates NewNode to point to temp's next node.
    *    - Updates temp to point to NewNode.
+   * 3. Increment length.
    */
   void insert_at(T value, int position) {
     if (position <= 1 || empty) {
@@ -183,6 +202,7 @@ public:
    *    - Set NewNode's next to be the head.
    *    - Set tail's next to be NewNode.
    *    - Set tail = NewNode.
+   * 3. Increment length.
    */
   void insert_end(T value) {
     if (empty) {
@@ -211,6 +231,7 @@ public:
    *    - Point tail to head's next.
    *    - Point head to head's next.
    * 4. Delete the old head.
+   * 5. Decrement length.
    */
   void remove_front() {
     if (empty) {
@@ -248,6 +269,7 @@ public:
    *    - Make the old tail's reference to the head null.
    *    - Set tail = NewTail.
    * 4. Delete the old tail.
+   * 5. Decrement length.
    */
   void remove_end() {
     if (empty) {
@@ -284,8 +306,23 @@ public:
    */
   bool is_empty() { return (empty); }
 
+  /* int size() {...}
+   *
+   * Returns the int length.
+   */
   int size() { return length; }
 
+  /* void advance() {...}
+   *
+   * Advances the "clock hand" for a round robin scheduler using a circular
+   * linked list clock.
+   *
+   * 1. Checks if the list is empty.
+   *    - If so, return (do nothing).
+   * 2. Else,
+   *    - tail = head
+   *    - head->next = tail
+   */
   void advance() {
     if (empty) {
       return;
@@ -301,11 +338,25 @@ public:
    */
   T get_front() { return (head->data); }
 
-  /* T get_node(T key) {...}
+  /* int get_pos(T key) {...}
    *
-   * Finds and returns the node # with data matching the key, if any.
+   * Finds and returns the node's position # with a data portion matching the
+   * key, if any.
+   *
+   * 1. Checks if the list is empty.
+   *    - If so, return 0.
+   * 2. Checks if the head's data matches the key.
+   *    - If so, returns 1.
+   * 3. Checks if the tail's data matches the key.
+   *    - If so, returns length.
+   * 4. Else...
+   *    - Make a temp node.
+   *    - Iterate through the list until its found the key or touched every
+   *      node.
+   *    - Returns temp->data if key found.
+   *    - Else, returns 0.
    */
-  int get_node(T key) {
+  int get_pos(T key) {
     if (empty) {
       return 0;
     }
@@ -337,6 +388,10 @@ public:
    */
   T get_next() { return (head->next->data); }
 
+  /* T get_end() {...}
+   *
+   * Returns the data of the tail node.
+   */
   T get_end() { return (tail->data); }
 
   /* void dump() {...}
