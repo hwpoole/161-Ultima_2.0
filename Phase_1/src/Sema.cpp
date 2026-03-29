@@ -90,27 +90,21 @@ void Semaphore::up() {
  * dump() is a "pretty print" to display the contents and current state of the
  * Semaphore.
  *
- * 1. Locks the mutex.
- * 2. Prints to the screen.
- * 3. Copies the current queue into a print_queue.
- * 4. Reads, prints, appends, and pops on the print_queue.
- * 5. Unlocks the mutex.
+ * 1. Prints to the screen.
+ * 2. Copies the current queue into a print_queue.
+ * 3. Reads, prints, appends, and pops on the print_queue.
  */
 void Semaphore::dump() {
-  pthread_mutex_lock(&lock);
-
   cout << "Resource: " << resource_name << endl;
   cout << "Sema_value: " << sema_value << endl;
   cout << "Sema_queue: ";
 
-  queue<pthread_t> print_queue = sema_queue;
+  queue<int> print_queue = sema_queue;
 
   while (!print_queue.empty()) {
-    cout << (unsigned long)print_queue.front();
+    cout << print_queue.front();
     print_queue.pop();
     cout << " --> ";
   }
   cout << endl;
-
-  pthread_mutex_unlock(&lock);
 }
