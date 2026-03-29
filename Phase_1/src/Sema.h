@@ -46,7 +46,7 @@
 
 #pragma once
 
-#include <pthread.h>
+#include "Sched.h"
 #include <queue>
 #include <string>
 
@@ -59,11 +59,14 @@ private:
   queue<pthread_t> sema_queue;
   pthread_mutex_t lock;
   pthread_cond_t cond;
+  static Scheduler *scheduler;
 
 public:
   Semaphore(const char *Name);
 
   ~Semaphore();
+
+  void set_scheduler(Scheduler *s) { scheduler = s; }
 
   void down();
 
