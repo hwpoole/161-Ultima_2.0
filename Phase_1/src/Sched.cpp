@@ -20,7 +20,7 @@
  * 1. Set current task = -1.
  *    - Invalid value on purpose - no tasks yet.
  *    - next_available_task_id = 0;
- *    - quantum is 300 by default.
+ *    - Quantum is 300 by default.
  */
 Scheduler::Scheduler() {
   current_task = -1;
@@ -50,11 +50,11 @@ Scheduler::~Scheduler() {
  * Creates a new task, and adds it to the end of the queue.
  *
  * 1. Create a NewTask TCB.
- *    - Assign it's task ID from next_available.
+ *    - Assign its task ID from next_available.
  *    - Set state READY.
- * 2. Insert that at end of queue.
+ * 2. Insert that TCB at the end of the queue.
  * 3. Increment next_available_task_id.
- * 4. Return created task's id.
+ * 4. Return created task's task_id.
  */
 int Scheduler::create_task() {
   TCB *NewTask = new TCB();
@@ -72,9 +72,9 @@ int Scheduler::create_task() {
  *
  * 1. Checks if TCBList is empty.
  *    - If so, do nothing (return).
- * 2. Get the current front's TCB.
+ * 2. Get the TCB at the front of the queue.
  * 3. Set it's state to DEAD.
- * 4. Call garbage_collect.
+ * 4. Call garbage_collect().
  */
 void Scheduler::kill_task() {
   if (TCBList.is_empty()) {
@@ -91,18 +91,19 @@ void Scheduler::kill_task() {
 /* void yield() {...}
  *
  * Allows the currently running task to voluntarily give up its CPU time to
- * another task. However, the scheduler only switches tasks if the calling task
- * is BLOCKED or if it has used its time.
+ * another task. The scheduler will only switch tasks if the calling task
+ * is BLOCKED or if it has exhausted its quantum.
  *
  * 1. Checks if the TCBList is empty.
  *    - If so, do nothing (return).
  * 2. Get the elapsed_time from the current task.
- * 3. Check if current task is blocked or has used all quantum.
- *    3a. If so, check if state is RUNNING.
- *        3a-1. If so, set to READY.
- *    3b. If so, advance TCBList and get the new front.
+ * 3. Check if the current task is blocked or has exhausted its quantum.
+ *    3a. If so, check if its state is RUNNING.
+ *        3a-1. If so, set its state to READY.
+ *    3b. If so, advance the TCBList and get the new TCB at the front of the
+ *        queue.
  *    3c. Then, move to the next READY task.
- *    3d. Then, mark that task as running.
+ *    3d. Then, update that task's state to RUNNING.
  * 4. Update the current process_table and current_task.
  */
 void Scheduler::yield() {
@@ -226,12 +227,13 @@ int Scheduler::get_task_id() {
 
 /* void start() {...}
  *
- * Starts the scheduler and sets the first task to RUNNING.
+ * Starts the scheduler and sets the first task's state to RUNNING.
  *
  * 1. Checks if the TCBList is not empty.
- * 2. Start the clock on it.
- * 3. Set it's state to RUNNING.
- * 4. If the TCBList is empty, do nothing.
+ * 2. Get the TCB of the task at the front of the queue.
+ * 3. Start the clock on that task.
+ * 4. Set that task's state to RUNNING.
+ * 5. If the TCBList is empty, do nothing.
  */
 void Scheduler::start() {
   if (!TCBList.is_empty()) {
@@ -244,11 +246,11 @@ void Scheduler::start() {
 
 /* void garbage_collect() {...}
  *
- * Collects and delets all TCBs marked with state DEAD, and all nodes in TCBList
- * associated with DEAD TCBs.
+ * Collects and deletes all TCBs marked with state DEAD, and all nodes in
+ * TCBList associated with DEAD TCBs.
  *
  * 1. Get TCBList size and save in ListSize.
- * 2. Iterate over the list and collect the current TCB.
+ * 2. Iterate over the list and get each TCB.
  * 3. If any TCB has state DEAD...
  *    3a. Call remove_front.
  *    3b. Delete that TCB.
