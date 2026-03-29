@@ -96,13 +96,17 @@ void Scheduler::set_state(int task_ID, string STATE) {
   TCB *current = TCBList.get_front();
   TCB *temp = TCBList.get_front();
 
-  while (temp->task_id != task_ID) {
+  int counter = 0;
+  while (temp->task_id != task_ID && counter < TCBList.size()) {
     TCBList.advance();
     temp = TCBList.get_front();
+    counter++;
   }
 
-  temp->state = STATE;
-  TCBList.set_value(temp);
+  if (temp->task_id == task_ID) {
+    temp->state = STATE;
+    TCBList.set_value(temp);
+  }
 
   if (temp != current) {
     TCBList.move_to_key(current);
