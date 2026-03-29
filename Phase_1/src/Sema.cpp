@@ -18,26 +18,15 @@
  * Constructor.
  *
  * Takes const char *Name as the name of the guarded resource.
- * Copies *Name into resource_name, with a null termination.
- *
- * Then, initializes the pthread mutex and condition variable.
+ * Copies *Name into resource_name.
  */
-Semaphore::Semaphore(const char *Name) {
-  resource_name = Name;
-  pthread_mutex_init(&lock, nullptr);
-  pthread_cond_init(&cond, nullptr);
-}
+Semaphore::Semaphore(const char *Name) { resource_name = Name; }
 
 /* Semaphore::~Semaphore() {...}
  *
  * Destructor.
- *
- * Destroys both pthread mutex and condition variable.
  */
-Semaphore::~Semaphore() {
-  pthread_mutex_destroy(&lock);
-  pthread_cond_destroy(&cond);
-}
+Semaphore::~Semaphore() {}
 
 /* void Semaphore::down() {...}
  *
@@ -54,6 +43,7 @@ Semaphore::~Semaphore() {
  */
 void Semaphore::down() {
   int this_task = scheduler->get_task_id();
+
   if (sema_value > 0) {
     sema_value--;
   } else {
