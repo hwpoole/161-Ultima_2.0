@@ -394,6 +394,36 @@ public:
    */
   T get_end() { return (tail->data); }
 
+  /* void move_to_key(T key) {...}
+   *
+   * Moves the circular linked list's head to the node whose data matches the
+   * key.
+   *
+   * 1. Checks if the list is empty.
+   *    - If so, return.
+   * 2. While head's data does not match key...
+   *    - Advance tail to head and head to head's.
+   *    - Try this for every node in the list.
+   */
+  void move_to_key(T key) {
+    if (empty) {
+      return;
+    }
+
+    int iterations = 0;
+    while (head->data != key && iterations < length) {
+      tail = head;
+      head = head->next;
+      iterations++;
+    }
+  }
+
+  /* void set_value(T value) {...}
+   *
+   * Sets the head's data portion to the provided value.
+   */
+  void set_value(T value) { head->data = value; }
+
   /* void dump() {...}
    *
    * Prints the current status of the list.
