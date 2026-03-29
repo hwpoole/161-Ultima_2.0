@@ -23,7 +23,7 @@
  *
  * Of note on the private resources:
  *
- * 1. char resource_name[64];
+ * 1. string resource_name;
  *    - Stores the name of the resource the Semaphore manages.
  *    - This is set *once* via the constructor.
  * 2. int sema_value = 1;
@@ -31,14 +31,9 @@
  *      As in, you may not simultaneously create and lock a Semaphore.
  *      Thus, it is "up" and available for use from the get-go.
  * 3. queue<pthread_t> sema_queue;
- *    - Stores the pthread IDs for the pthreads waiting for access on the
+ *    - Stores the thread IDs for the threads waiting for access on the
  *      guarded resource.
  *    - Is a FIFO queue. Threads may not proceed unless they are in the front.
- * 4. pthread_mutex_t lock;
- *    - A mutex to lock the guarded resource.
- * 5. pthread_cond_t cond;
- *    - A condition on which all threads will wait.
- *    - Used to signal that a thread is good to go.
  *
  * Hunter Poole
  * 03-28-2026
