@@ -86,7 +86,7 @@ public:
  *     - Returns the data portion of the node after the head.
  * 14. T get_end()
  *     - Returns the data portion of the tail.
- * 9.  void dump()
+ * 15. void dump()
  *     - print method.
  *     - Dumps the current state of the CircularLinkedList.
  */
@@ -112,7 +112,7 @@ public:
     head = nullptr;
     tail = nullptr;
     empty = true;
-    length = -1;
+    length = 0;
   };
 
   /* ~CircularLinkedList() {...}
@@ -364,7 +364,7 @@ public:
     if (head->data == key) {
       return (0);
     } else if (tail->data == key) {
-      return (length);
+      return (length - 1);
     } else {
       Node<T> *temp = head;
 
