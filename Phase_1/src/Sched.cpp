@@ -122,7 +122,8 @@ void Scheduler::start() {
 }
 
 void Scheduler::garbage_collect() {
-  for (int i = 0; i < TCBList.size() - 1; i++) {
+  int ListSize = TCBList.size();
+  for (int i = 0; i < ListSize; i++) {
     TCB *current = TCBList.get_front();
     if (current->state == DEAD) {
       TCBList.remove_front();
@@ -131,7 +132,14 @@ void Scheduler::garbage_collect() {
       TCBList.advance();
     }
   }
-  TCBList.advance();
+
+  if (!TCBList.is_empty()) {
+    process_table = TCBList.get_front();
+    current_task = process_table->task_id;
+  } else {
+    process_table = nullptr;
+    current_task = -1;
+  }
 }
 
 void Scheduler::dump() {
