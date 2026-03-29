@@ -13,6 +13,9 @@
 #include <iostream>
 #include <queue>
 
+// Allocate memory for static variable Scheduler *scheduler.
+Scheduler *Semaphore::scheduler = nullptr;
+
 /* Semaphore::Semaphore(const char *Name) {...}
  *
  * Constructor.
