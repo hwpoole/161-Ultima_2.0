@@ -18,7 +18,13 @@ Scheduler::Scheduler() {
   current_quantum = 300;
 }
 
-Scheduler::~Scheduler() {}
+Scheduler::~Scheduler() {
+  while (!TCBList.is_empty()) {
+    TCB *DeadTask = TCBList.get_front();
+    delete DeadTask;
+    TCBList.remove_front();
+  }
+}
 
 int Scheduler::create_task() {
   TCB *NewTask = new TCB();
