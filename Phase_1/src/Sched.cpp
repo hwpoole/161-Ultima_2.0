@@ -57,6 +57,27 @@ void Scheduler::yield() {
   current_task = process_table->task_id;
 }
 
+void Scheduler::set_quantum(long quantum) { current_quantum = quantum; }
+
+long Scheduler::get_quantum() { return (current_quantum); }
+
+void Scheduler::set_state(int task_ID, string STATE) {
+  TCB *current = TCBList.get_front();
+  TCB *temp = TCBList.get_front();
+
+  while (temp->task_id != task_ID) {
+    TCBList.advance();
+    temp = TCBList.get_front();
+  }
+
+  temp->state = STATE;
+  TCBList.set_value(temp);
+
+  if (temp != current) {
+    TCBList.move_to_key(current);
+  }
+}
+
 void Scheduler::garbage_collect() {}
 
 void Scheduler::dump() {}

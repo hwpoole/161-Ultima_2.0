@@ -51,6 +51,16 @@ public:
 
   void yield();
 
+  void set_quantum(long quantum);
+
+  long get_quantum();
+
+  void set_state(int task_ID, string state);
+
+  string get_state();
+
+  int get_task_id();
+
   void garbage_collect();
 
   void dump();
