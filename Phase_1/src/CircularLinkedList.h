@@ -284,6 +284,15 @@ public:
    */
   bool is_empty() { return (empty); }
 
+  void advance() {
+    if (empty) {
+      return;
+    }
+
+    tail = head;
+    head = head->next;
+  }
+
   /* T get_front() {...}
    *
    * Returns the head's data.
