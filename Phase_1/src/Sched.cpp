@@ -59,7 +59,6 @@ void Scheduler::yield() {
   }
 
   TCB *current = TCBList.get_front();
-  int counter = 0;
   clock_t elapsed_time = clock() - current->start_time;
 
   if (current->state == BLOCKED || elapsed_time >= current_quantum) {
@@ -68,6 +67,10 @@ void Scheduler::yield() {
       TCBList.set_value(current);
     }
 
+    TCBList.advance();
+    current = TCBList.get_front();
+
+    int counter = 0;
     while (current->state != READY && counter < TCBList.size() - 1) {
       TCBList.advance();
       current = TCBList.get_front();
