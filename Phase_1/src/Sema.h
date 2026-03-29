@@ -56,9 +56,7 @@ class Semaphore {
 private:
   string resource_name;
   int sema_value = 1;
-  queue<pthread_t> sema_queue;
-  pthread_mutex_t lock;
-  pthread_cond_t cond;
+  queue<int> sema_queue;
   static Scheduler *scheduler;
 
 public:

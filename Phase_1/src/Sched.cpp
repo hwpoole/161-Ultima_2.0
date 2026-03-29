@@ -62,7 +62,7 @@ void Scheduler::yield() {
   int counter = 0;
   clock_t elapsed_time = clock() - current->start_time;
 
-  if (elapsed_time >= current_quantum) {
+  if (current->state == BLOCKED || elapsed_time >= current_quantum) {
     if (current->state == RUNNING) {
       current->state = READY;
       TCBList.set_value(current);
@@ -79,7 +79,7 @@ void Scheduler::yield() {
       current->start_time = clock();
       TCBList.set_value(current);
     } // Else... deadlock?
-  } // Else... we don't yield. Quantum not used.
+  }
 
   TCBList.advance();
   process_table = TCBList.get_front();
@@ -105,6 +105,11 @@ void Scheduler::set_state(int task_ID, string STATE) {
   if (temp != current) {
     TCBList.move_to_key(current);
   }
+}
+
+int Scheduler::get_task_id() {
+  TCB *current = TCBList.get_front();
+  return (current->task_id);
 }
 
 void Scheduler::start() {
