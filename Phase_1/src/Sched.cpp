@@ -50,6 +50,7 @@ void Scheduler::kill_task() {
   TCBList.set_value(TaskToKill);
 
   TCBList.move_to_key(current);
+  garbage_collect();
 }
 
 void Scheduler::yield() {
@@ -113,6 +114,15 @@ void Scheduler::start() {
   current_task = current->task_id;
 }
 
-void Scheduler::garbage_collect() {}
+void Scheduler::garbage_collect() {
+  for (int i = 0; i < TCBList.size() - 1; i++) {
+    TCB *current = TCBList.get_front();
+    if (current->state == DEAD) {
+      delete current;
+    }
+    TCBList.advance();
+  }
+  TCBList.advance();
+}
 
 void Scheduler::dump() {}
