@@ -80,7 +80,7 @@ private:
   Node<T> *head;
   Node<T> *tail;
   bool empty;
-  int size;
+  int length;
 
 public:
   /* CircularLinkedList() {...}
@@ -96,7 +96,7 @@ public:
     head = nullptr;
     tail = nullptr;
     empty = true;
-    size = 0;
+    length = 0;
   };
 
   /* ~CircularLinkedList() {...}
@@ -138,7 +138,7 @@ public:
       head = NewNode;
     }
 
-    size++;
+    length++;
   }
 
   /* void insert_at(T value, int position) {...}
@@ -169,7 +169,7 @@ public:
       temp->next = NewNode;
     }
 
-    size++;
+    length++;
   }
 
   /* void insert_end(T value) {...}
@@ -195,7 +195,7 @@ public:
       tail = NewNode;
     }
 
-    size++;
+    length++;
   }
 
   /* void remove_front() {...}
@@ -229,7 +229,7 @@ public:
     }
 
     delete OldHead;
-    size--;
+    length--;
   }
 
   /* void remove_end() {...}
@@ -275,7 +275,7 @@ public:
     }
 
     delete OldTail;
-    size--;
+    length--;
   }
 
   /* bool is_empty() {...}
@@ -283,6 +283,8 @@ public:
    * Returns the empty bool.
    */
   bool is_empty() { return (empty); }
+
+  int size() { return length; }
 
   void advance() {
     if (empty) {
@@ -311,12 +313,12 @@ public:
     if (head->data == key) {
       return (1);
     } else if (tail->data == key) {
-      return (size);
+      return (length);
     } else {
       Node<T> *temp = head;
 
       int iterations = 0;
-      while (temp->data != key && iterations < size) {
+      while (temp->data != key && iterations < length) {
         temp = temp->next;
         iterations++;
       }
