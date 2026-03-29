@@ -125,4 +125,17 @@ void Scheduler::garbage_collect() {
   TCBList.advance();
 }
 
-void Scheduler::dump() {}
+void Scheduler::dump() {
+  cout << "---------- PROCESS TABLE ----------" << endl;
+  cout << "Quantum = " << current_quantum << endl;
+  cout << "Task-ID\t Elapsed Time\tState" << endl;
+
+  for (int i = 0; i < TCBList.size() - 1; i++) {
+    TCB *current = TCBList.get_front();
+    clock_t elapsed_time = clock() - current->start_time;
+    printf("%6d\t%8d\t%s", current->task_id, elapsed_time,
+           current->state.c_str());
+    TCBList.advance();
+  }
+  TCBList.advance();
+}
