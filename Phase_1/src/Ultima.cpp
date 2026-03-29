@@ -74,4 +74,11 @@ int main() {
   WINDOW *Console_Win = create_window(10, 20, 30, 62);
   write_window(Console_Win, 1, 1, "...Console...");
   write_window(Console_Win, 2, 1, "161-Ultima 2.0 #");
+
+  WINDOW *Task1_Win = create_window(15, 25, 15, 2);
+  write_window(Task1_Win, 6, 1, "Task 1 Window");
+  WINDOW *Task2_Win = create_window(15, 25, 15, 30);
+  write_window(Task2_Win, 6, 1, "Task 2 Window");
+  WINDOW *Task3_Win = create_window(15, 25, 15, 57);
+  write_window(Task3_Win, 6, 1, "Task 3 Window");
 }
