@@ -38,6 +38,10 @@ int Scheduler::create_task() {
 }
 
 void Scheduler::kill_task() {
+  if (TCBList.is_empty()) {
+    return;
+  }
+
   TCB *current = TCBList.get_front();
 
   TCBList.move_to_key(process_table);
