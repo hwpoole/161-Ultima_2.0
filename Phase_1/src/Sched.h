@@ -2,7 +2,7 @@
  * Ultima 2.0
  *
  * This Scheduler class header file shows the private and public resources of
- * the Scheduler class.
+ * the Scheduler class and its struct, TCB.
  *
  * Of note to the public, who wish to use this class:
  *  1.  Scheduler()
@@ -30,9 +30,22 @@
  *      - A getter for the current task's task_id.
  *  11. void start()
  *      - Starts the scheduler and runs the first task, if tasks are present.
+ *  12. void garbage_collect()
+ *      - Collects and deletes all TCBs whole state is DEAD.
+ *  13. void dump()
+ *      - A "pretty print" method for the current scheduler state.
  *
  * Of note on the private resources:
- *  1.
+ *  1.  TCB *process_table;
+ *      - A pointer to a TCB struct.
+ *  2.  int current_task;
+ *      - The task_id of the currently selected and possibly RUNNING task.
+ *  3.  long current_quantum;
+ *      - The current quantum limit that tasks must adhere to.
+ *  4.  int next_available_task_id;
+ *      - The task_id to be assigned to the next new task, if one is created.
+ *  5.  CircularLinkedList<TCB *> TCBList
+ *      - TCBList holds the tasks in a circuler linked listed for the scheduler.
  *
  * Hunter Poole
  * 03-28-2026
@@ -45,11 +58,13 @@
 
 using namespace std;
 
+// Allowable states for tasks.
 const string READY = "READY";
 const string RUNNING = "RUNNING";
 const string BLOCKED = "BLOCKED";
 const string DEAD = "DEAD";
 
+// Task Control Block.
 struct TCB {
   int task_id;
   string state;
