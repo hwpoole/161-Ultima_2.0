@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <iostream>
 
 using namespace std;
@@ -79,6 +80,7 @@ private:
   Node<T> *head;
   Node<T> *tail;
   bool empty;
+  int size;
 
 public:
   /* CircularLinkedList() {...}
@@ -94,6 +96,7 @@ public:
     head = nullptr;
     tail = nullptr;
     empty = true;
+    size = 0;
   };
 
   /* ~CircularLinkedList() {...}
@@ -134,6 +137,8 @@ public:
       tail->next = NewNode;
       head = NewNode;
     }
+
+    size++;
   }
 
   /* void insert_at(T value, int position) {...}
@@ -163,6 +168,8 @@ public:
       NewNode->next = temp->next;
       temp->next = NewNode;
     }
+
+    size++;
   }
 
   /* void insert_end(T value) {...}
@@ -187,6 +194,8 @@ public:
       tail->next = NewNode;
       tail = NewNode;
     }
+
+    size++;
   }
 
   /* void remove_front() {...}
@@ -220,6 +229,7 @@ public:
     }
 
     delete OldHead;
+    size--;
   }
 
   /* void remove_end() {...}
@@ -265,6 +275,7 @@ public:
     }
 
     delete OldTail;
+    size--;
   }
 
   /* bool is_empty() {...}
@@ -273,11 +284,49 @@ public:
    */
   bool is_empty() { return (empty); }
 
-  T get_next() {}
+  /* T get_front() {...}
+   *
+   * Returns the head's data.
+   */
+  T get_front() { return (head->data); }
 
-  T get_head() {}
+  /* T get_node(T key) {...}
+   *
+   * Finds and returns the node # with data matching the key, if any.
+   */
+  int get_node(T key) {
+    if (empty) {
+      return 0;
+    }
 
-  T get_tail() {}
+    if (head->data == key) {
+      return (1);
+    } else if (tail->data == key) {
+      return (size);
+    } else {
+      Node<T> *temp = head;
+
+      int iterations = 0;
+      while (temp->data != key && iterations < size) {
+        temp = temp->next;
+        iterations++;
+      }
+
+      if (temp->data == key) {
+        return (iterations);
+      } else {
+        return 0;
+      }
+    }
+  }
+
+  /* T get_next() {...}
+   *
+   * Returns the data of the node after the head.
+   */
+  T get_next() { return (head->next->data); }
+
+  T get_end() { return (tail->data); }
 
   /* void dump() {...}
    *
