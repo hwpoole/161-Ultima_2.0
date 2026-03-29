@@ -32,7 +32,15 @@ int Scheduler::create_task() {
 
 void Scheduler::kill_task() {}
 
-void Scheduler::yield() {}
+void Scheduler::yield() {
+  if (TCBList.is_empty()) {
+    return;
+  }
+
+  TCBList.advance();
+  process_table = TCBList.get_front();
+  current_task = process_table->task_id;
+}
 
 void Scheduler::garbage_collect() {}
 
