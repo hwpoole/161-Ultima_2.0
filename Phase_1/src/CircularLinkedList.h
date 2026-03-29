@@ -112,7 +112,7 @@ public:
     head = nullptr;
     tail = nullptr;
     empty = true;
-    length = 0;
+    length = -1;
   };
 
   /* ~CircularLinkedList() {...}
@@ -358,11 +358,11 @@ public:
    */
   int get_pos(T key) {
     if (empty) {
-      return 0;
+      return -1;
     }
 
     if (head->data == key) {
-      return (1);
+      return (0);
     } else if (tail->data == key) {
       return (length);
     } else {
@@ -377,7 +377,7 @@ public:
       if (temp->data == key) {
         return (iterations);
       } else {
-        return 0;
+        return -1;
       }
     }
   }
