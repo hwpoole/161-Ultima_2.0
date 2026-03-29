@@ -81,7 +81,6 @@ void Scheduler::yield() {
     } // Else... deadlock?
   }
 
-  TCBList.advance();
   process_table = TCBList.get_front();
   current_task = process_table->task_id;
 }
@@ -123,9 +122,11 @@ void Scheduler::garbage_collect() {
   for (int i = 0; i < TCBList.size() - 1; i++) {
     TCB *current = TCBList.get_front();
     if (current->state == DEAD) {
+      TCBList.remove_front();
       delete current;
+    } else {
+      TCBList.advance();
     }
-    TCBList.advance();
   }
   TCBList.advance();
 }
