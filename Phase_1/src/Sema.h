@@ -10,14 +10,16 @@
  *      - A constructor. Takes the name of the resource the Semaphore manages.
  *  2. ~Semaphore();
  *      - A destructor.
- *  3. void down();
+ *  3. set_scheduler(Scheduler *s);
+ *      - Registers the Scheduler with the Semaphore class.
+ *  4. void down();
  *      - Call this to attempt to lock and access the guarded resource.
  *      - Threads that can't get access to the resource will wait in a FIFO
  *        queue until they are called on.
  *      - This is a blocking wait, but is not a busy wait.
- *  4. void up();
+ *  5. void up();
  *      - Call this to unlock the guarded resource for use by other threads.
- *  5. void dump();
+ *  6. void dump();
  *      - Call this to see the current contents and/or state of the Semaphore.
  *
  *
@@ -30,7 +32,7 @@
  *    - Any valid binary Semaphore should start its life as "available."
  *      As in, you may not simultaneously create and lock a Semaphore.
  *      Thus, it is "up" and available for use from the get-go.
- * 3. queue<pthread_t> sema_queue;
+ * 3. queue<int> ema_queue;
  *    - Stores the thread IDs for the threads waiting for access on the
  *      guarded resource.
  *    - Is a FIFO queue. Threads may not proceed unless they are in the front.
