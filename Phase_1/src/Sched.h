@@ -96,7 +96,7 @@ public:
 
   void set_state(int task_ID, string state);
 
-  string get_state();
+  string get_state(int task_ID);
 
   int get_task_id();
 

@@ -182,6 +182,39 @@ void Scheduler::set_state(int task_ID, string STATE) {
   }
 }
 
+/* string get_state(int task_ID) {...}
+ *
+ * A getter method to get a specific task's state by its task_ID.
+ *
+ * 1. Saves the current position on the TCBList by key.
+ * 2. Moves to the node that has a matching task_ID.
+ * 3. Copies that TCB's STATE.
+ * 4. Returns to starting position.
+ * 5. Returns the found STATE.
+ */
+string Scheduler::get_state(int task_ID) {
+  TCB *current = TCBList.get_front();
+  TCB *temp = TCBList.get_front();
+
+  string found_state;
+  int counter = 0;
+  while (temp->task_id != task_ID && counter < TCBList.size()) {
+    TCBList.advance();
+    temp = TCBList.get_front();
+    counter++;
+  }
+
+  if (temp->task_id == task_ID) {
+    found_state = temp->state;
+  }
+
+  if (temp != current) {
+    TCBList.move_to_key(current);
+  }
+
+  return found_state;
+}
+
 /* int get_task_id() {...}
  *
  * A getter method for the current task_id from the front of the TCBList.
