@@ -36,7 +36,16 @@ int Scheduler::create_task() {
   return (next_available_task_id - 1);
 }
 
-void Scheduler::kill_task() {}
+void Scheduler::kill_task() {
+  TCB *current = TCBList.get_front();
+
+  TCBList.move_to_key(process_table);
+  TCB *TaskToKill = TCBList.get_front();
+  TaskToKill->state = DEAD;
+  TCBList.set_value(TaskToKill);
+
+  TCBList.move_to_key(current);
+}
 
 void Scheduler::yield() {
   if (TCBList.is_empty()) {
