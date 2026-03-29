@@ -48,12 +48,13 @@
 
 #include <pthread.h>
 #include <queue>
+#include <string>
 
 using namespace std;
 
 class Semaphore {
 private:
-  char resource_name[64];
+  string resource_name;
   int sema_value = 1;
   queue<pthread_t> sema_queue;
   pthread_mutex_t lock;

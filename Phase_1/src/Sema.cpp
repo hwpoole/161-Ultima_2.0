@@ -10,7 +10,6 @@
  */
 
 #include "Sema.h"
-#include <cstring>
 #include <iostream>
 #include <pthread.h>
 #include <queue>
@@ -25,8 +24,7 @@
  * Then, initializes the pthread mutex and condition variable.
  */
 Semaphore::Semaphore(const char *Name) {
-  strncpy(resource_name, Name, 63);
-  resource_name[63] = '\0';
+  resource_name = Name;
   pthread_mutex_init(&lock, nullptr);
   pthread_cond_init(&cond, nullptr);
 }
