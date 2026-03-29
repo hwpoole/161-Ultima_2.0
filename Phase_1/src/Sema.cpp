@@ -66,7 +66,7 @@ void Semaphore::down() {
  * have at least one task that has been moved to a READY state, which will run
  * soon, and *has already* requested access to the guarded resource. We may not
  * guarantee this task runs next, but we may guarantee the semaphore will remain
- * unavailable until that task call up(), at which point the process repeats.
+ * unavailable until that task calls up(), at which point the process repeats.
  *
  * In this way, we enforce the FIFO nature (or intent) of the sema_queue with
  * regards to resource access.

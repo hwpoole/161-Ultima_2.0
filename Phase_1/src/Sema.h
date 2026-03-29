@@ -32,10 +32,10 @@
  *    - Any valid binary Semaphore should start its life as "available."
  *      As in, you may not simultaneously create and lock a Semaphore.
  *      Thus, it is "up" and available for use from the get-go.
- * 3. queue<int> ema_queue;
- *    - Stores the thread IDs for the threads waiting for access on the
+ * 3. queue<int> sema_queue;
+ *    - Stores the task_ids for the tasks waiting for access on the
  *      guarded resource.
- *    - Is a FIFO queue. Threads may not proceed unless they are in the front.
+ *    - Is a FIFO queue. Tasks may not proceed unless they are in the front.
  *
  * Hunter Poole
  * 03-28-2026
