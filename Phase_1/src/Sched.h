@@ -5,7 +5,31 @@
  * the Scheduler class.
  *
  * Of note to the public, who wish to use this class:
- *  1.
+ *  1.  Scheduler()
+ *      - A no-arg constructor.
+ *  2.  ~Scheduler()
+ *      - A destructor.
+ *  3.  int create_task()
+ *      - Creates a new task at the end of the queue.
+ *  4.  void kill_task()
+ *      - Kills the current task and calls garbage_collect().
+ *  5.  void yield()
+ *      - Allows the calling task to give up its time, if the scheduler agrees
+ * to do so.
+ *      - BLOCKED tasks or tasks that have used their quantum WILL be yielded.
+ *      - Other tasks will not be.
+ *  6.  void set_quantum()
+ *      - A setter for the current_quantum variable.
+ *  7.  long get_quantum()
+ *      - A getter for the current quantum.
+ *  8.  void set_state(int task_ID, string STATE)
+ *      - Sets a specific task's STATE by task_id.
+ *  9.  string get_state()
+ *      - A getter for the state of a task by task_id.
+ *  10. int get_task_id()
+ *      - A getter for the current task's task_id.
+ *  11. void start()
+ *      - Starts the scheduler and runs the first task, if tasks are present.
  *
  * Of note on the private resources:
  *  1.
