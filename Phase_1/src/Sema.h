@@ -66,7 +66,7 @@ public:
 
   ~Semaphore();
 
-  void set_scheduler(Scheduler *s) { scheduler = s; }
+  static void set_scheduler(Scheduler *s) { scheduler = s; }
 
   void down();
 
