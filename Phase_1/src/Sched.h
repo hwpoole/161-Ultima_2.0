@@ -61,6 +61,8 @@ public:
 
   int get_task_id();
 
+  void start();
+
   void garbage_collect();
 
   void dump();

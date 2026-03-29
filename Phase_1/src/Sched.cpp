@@ -11,6 +11,7 @@
 
 #include "Sched.h"
 #include "CircularLinkedList.h"
+#include <ctime>
 
 Scheduler::Scheduler() {
   current_task = -1;
@@ -76,6 +77,13 @@ void Scheduler::set_state(int task_ID, string STATE) {
   if (temp != current) {
     TCBList.move_to_key(current);
   }
+}
+
+void Scheduler::start() {
+  TCB *current = TCBList.get_front();
+  current->start_time = clock();
+  current->state = RUNNING;
+  current_task = current->task_id;
 }
 
 void Scheduler::garbage_collect() {}
