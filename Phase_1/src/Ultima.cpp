@@ -20,6 +20,10 @@ int Task1 = my_scheduler->create_task();
 int Task2 = my_scheduler->create_task();
 int Task3 = my_scheduler->create_task();
 
+WINDOW *Task1_Win;
+WINDOW *Task2_Win;
+WINDOW *Task3_Win;
+
 WINDOW *create_window(int height, int width, int starty, int startx) {
   WINDOW *Win;
 
@@ -47,29 +51,28 @@ void write_window(WINDOW *Win, int y, int x, const char *text) {
 void display_help(WINDOW *Win) {
   wclear(Win);
   write_window(Win, 1, 1, "...Help...");
-  write_window(Win, 2, 1, "1= Kill T1");
-  write_window(Win, 3, 1, "2= Kill T2");
-  write_window(Win, 4, 1, "3= Kill T3");
+  write_window(Win, 2, 1, "1= Scenario 1");
+  write_window(Win, 3, 1, "2= Secnario 2");
+  write_window(Win, 4, 1, "3= Scenario 3");
   write_window(Win, 5, 1, "c= clear screen");
   write_window(Win, 6, 1, "h= help screen");
   write_window(Win, 7, 1, "q= Quit");
 }
 
-void *fake_work(WINDOW *task1_window, WINDOW *task2_window,
-                WINDOW *task3_window) {
+void *fake_work() {
   int current_task = my_scheduler->get_task_id();
   char buffer[256];
   WINDOW *current_window = nullptr;
   string TaskName;
 
   if (current_task == Task1) {
-    current_window = task1_window;
+    current_window = Task1_Win;
     TaskName = "Task 1";
   } else if (current_task == Task2) {
-    current_window = task2_window;
+    current_window = Task2_Win;
     TaskName = "Task 2";
   } else if (current_task == Task3) {
-    current_window = task3_window;
+    current_window = Task3_Win;
     TaskName = "Task 3";
   }
 
@@ -116,16 +119,14 @@ int main() {
   write_window(Console_Win, 1, 1, "...Console...");
   write_window(Console_Win, 2, 1, "161-Ultima 2.0 #");
 
-  WINDOW *Task1_Win = create_window(15, 25, 15, 2);
+  Task1_Win = create_window(15, 25, 15, 2);
   write_window(Task1_Win, 6, 1, "Task 1 Window\n");
-  WINDOW *Task2_Win = create_window(15, 25, 15, 30);
+  Task2_Win = create_window(15, 25, 15, 30);
   write_window(Task2_Win, 6, 1, "Task 2 Window\n");
-  WINDOW *Task3_Win = create_window(15, 25, 15, 57);
+  Task3_Win = create_window(15, 25, 15, 57);
   write_window(Task3_Win, 6, 1, "Task 3 Window\n");
 
-  for (int i = 0; i < 3; i++) {
-    fake_work(Task1_Win, Task2_Win, Task3_Win);
-  }
+  my_scheduler->start();
 
   // I/O processing
   cbreak();
@@ -135,4 +136,74 @@ int main() {
 
   char buffer[256];
   int input = -1;
+
+  while (input != 'q') {
+    input = wgetch(Console_Win);
+
+    switch (input) {
+    case '1':
+      write_window(Log_Win, "Scenario 1: One Task At A Time\n");
+      for (int i = 0; i < 3; i++) {
+        fake_work();
+      }
+      break;
+    case '2':
+      write_window(Log_Win,
+                   "Scenario 2: Each Task wants the critical region\n");
+      for (int i = 0; i < 6; i++) {
+        fake_work_with_semaphore();
+      }
+      break;
+    case '3':
+      break;
+    case 'c':
+      wclear(Console_Win);
+      wclear(Task1_Win);
+      wclear(Task2_Win);
+      wclear(Task3_Win);
+      wclear(Log_Win);
+      write_window(Log_Win, 1, 5, "...Log Window...\n");
+      write_window(Log_Win, "...Main program started...\n");
+      write_window(Console_Win, 1, 1, "161-Ultima 2.0 # ");
+      break;
+    case 'h':
+      display_help(Console_Win);
+      write_window(Console_Win, 8, 1, "161-Ultima 2.0 # ");
+      break;
+    case 'q':
+      write_window(Log_Win, " Quitting...\n");
+      write_window(Log_Win, " Call kill_task on all tasks.\n");
+
+      for (int i = 0; i < 3; i++) {
+        int this_task = my_scheduler->get_task_id();
+        my_scheduler->kill_task();
+        if (this_task == Task1) {
+          write_window(Task1_Win, " Killed Task 1\n");
+        } else if (this_task == Task2) {
+          write_window(Task2_Win, " Killed Task 2\n");
+        } else if (this_task == Task3) {
+          write_window(Task3_Win, " Killed Task 3\n");
+        }
+      }
+
+      break;
+    case ERR:
+      break;
+    default:
+      sprintf(buffer, " %c", input);
+      write_window(Console_Win, buffer);
+      write_window(Console_Win, " -Invalid Command\n");
+      write_window(Log_Win, buffer);
+      write_window(Log_Win, " -Invalid Command\n");
+      write_window(Console_Win, " 161-Ultima 2.0 #");
+    }
+  }
+
+  write_window(Log_Win, " All tasks have now ended...\n");
+  write_window(Log_Win, " Demo ended...\n");
+
+  sleep(5);
+  getch();
+  endwin();
+  return (0);
 }
