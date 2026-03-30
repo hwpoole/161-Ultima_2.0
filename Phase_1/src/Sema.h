@@ -6,11 +6,11 @@
  *
  * Of note to the public, who wish to use this class:
  *
- *  1. Semaphore(cost char *Name);
+ *  1. Semaphore(const char *Name);
  *      - A constructor. Takes the name of the resource the Semaphore manages.
  *  2. ~Semaphore();
  *      - A destructor.
- *  3. set_scheduler(Scheduler *s);
+ *  3. void set_scheduler(Scheduler *s);
  *      - Registers the Scheduler with the Semaphore class.
  *  4. void down();
  *      - Call this to attempt to lock and access the guarded resource.
@@ -19,7 +19,7 @@
  *      - This is a blocking wait, but is not a busy wait.
  *  5. void up();
  *      - Call this to unlock the guarded resource for use by other threads.
- *  6. void dump();
+ *  6. string dump();
  *      - Call this to see the current contents and/or state of the Semaphore.
  *
  *
