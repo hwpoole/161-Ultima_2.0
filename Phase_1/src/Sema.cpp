@@ -12,6 +12,7 @@
 #include "Sema.h"
 #include <iostream>
 #include <queue>
+#include <sstream>
 
 // Allocate memory for static variable Scheduler *scheduler.
 Scheduler *Semaphore::scheduler = nullptr;
@@ -71,7 +72,7 @@ void Semaphore::down() {
  * In this way, we enforce the FIFO nature (or intent) of the sema_queue with
  * regards to resource access.
  *
- * 1. Checks if the sema_queue is empty.
+ * 1. Checks if the sema_queue is not empty.
  *    - If so, gets the next task's task_id.
  *    - Pops that task from the queue.
  *    - Sets its state to READY in the scheduler.
@@ -87,8 +88,6 @@ void Semaphore::up() {
     sema_value++;
   }
 }
-
-#include <sstream>
 
 /* string Semaphore::dump() {...}
  *
@@ -116,4 +115,3 @@ string Semaphore::dump() {
   ss << endl;
   return ss.str();
 }
-
