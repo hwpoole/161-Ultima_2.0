@@ -11,6 +11,7 @@ Introduction/
 */Docs/
 docs/
 Docs/
+*.zip
 
 ### CMake ###
 CMakeLists.txt.user
