@@ -10,6 +10,7 @@ project(Phase1)                         # Set project name as Phase1.
 set(CMAKE_CXX_STANDARD 20)              # Set C++20 as the minimum required C++ version.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)     # Enforce the C++20 minimum requirement.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # Export a list of compile commands - useful for clang / VIM.
+set(CURSES_NEED_NCURSES TRUE)           # Set NCURSES as needed.
 
 enable_testing()                        # Enable testing - required for ctest.
 ######################################################################################################
@@ -23,19 +24,33 @@ FetchContent_Declare(                   # Declare the content to be fetched, and
 )
 
 FetchContent_MakeAvailable(googletest)  # Fech GoogleTest and make it available.
+
+find_package(Curses REQUIRED)
 ######################################################################################################
 add_executable(
   Ultima
   src/Ultima.cpp
+  src/Sched.cpp
+  src/Sema.cpp
+  src/Mem_mgr.cpp
+)
+
+target_include_directories(
+  Ultima
+  PRIVATE
+  "${CMAKE_SOURCE_DIR}/src"
+  ${CURSES_INCLUDE_DIRS}
+)
+
+target_link_libraries (
+  Ultima
+  PRIVATE
+  ${CURSES_LIBRARIES}
 )
 
 add_executable(                         # Declare the executable to be added, and from where.
   SmokeTest
   test/SmokeTest.cpp
-)
-
-target_link_libraries(
-
 )
 
 target_link_libraries(                  # Link <file> with <content / library>.
