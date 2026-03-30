@@ -77,12 +77,12 @@ void *fake_work(WINDOW *task1_window, WINDOW *task2_window,
   strcpy(task, TaskName.c_str());
 
   for (int i = 0; i < 10; i++) {
-    sprintf(buffer, "%s running", task);
+    sprintf(buffer, " %s running\n", task);
     write_window(current_window, buffer);
     sleep(1);
   }
 
-  sprintf(buffer, "%s yielding", task);
+  sprintf(buffer, " %s yielding\n", task);
   write_window(current_window, buffer);
   sleep(1);
   my_scheduler->yield();
@@ -109,19 +109,19 @@ int main() {
   wrefresh(Heading_Win);
 
   WINDOW *Log_Win = create_window(10, 60, 30, 2);
-  write_window(Log_Win, 1, 5, "...Log Window...");
-  write_window(Log_Win, "...Main program started...");
+  write_window(Log_Win, 1, 5, "...Log Window...\n");
+  write_window(Log_Win, "...Main program started...\n");
 
   WINDOW *Console_Win = create_window(10, 20, 30, 62);
   write_window(Console_Win, 1, 1, "...Console...");
   write_window(Console_Win, 2, 1, "161-Ultima 2.0 #");
 
   WINDOW *Task1_Win = create_window(15, 25, 15, 2);
-  write_window(Task1_Win, 6, 1, "Task 1 Window");
+  write_window(Task1_Win, 6, 1, "Task 1 Window\n");
   WINDOW *Task2_Win = create_window(15, 25, 15, 30);
-  write_window(Task2_Win, 6, 1, "Task 2 Window");
+  write_window(Task2_Win, 6, 1, "Task 2 Window\n");
   WINDOW *Task3_Win = create_window(15, 25, 15, 57);
-  write_window(Task3_Win, 6, 1, "Task 3 Window");
+  write_window(Task3_Win, 6, 1, "Task 3 Window\n");
 
   for (int i = 0; i < 3; i++) {
     fake_work(Task1_Win, Task2_Win, Task3_Win);
