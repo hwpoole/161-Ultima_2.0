@@ -132,7 +132,7 @@ void *fake_work() {
                                                : "Task 3";
   char buffer[256];
 
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 5; i++) {
     sprintf(buffer, " %s running\n", name);
     write_window(win, buffer);
     this_thread::sleep_for(chrono::milliseconds(500));
@@ -199,6 +199,7 @@ void *fake_work_with_semaphore() {
     if (my_scheduler->get_state(current_task) == BLOCKED) {
       sprintf(buffer, " %s was blocked\n", name);
       write_window(win, buffer);
+      this_thread::sleep_for(chrono::milliseconds(500));
       return (NULL);
     }
 
@@ -308,7 +309,7 @@ int main() {
     switch (input) {
     case '1': // Scenario 1.
       write_window(Log_Win, " Scenario 1: One Task At A Time\n");
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < 4; i++) {
         fake_work();
       }
       write_window(Log_Win, " Scenario 1 Finished\n");
@@ -329,10 +330,25 @@ int main() {
       break;
     case 'c': // Clear windows.
       wclear(Console_Win);
+      wrefresh(Console_Win);
+
       wclear(Task1_Win);
+      box(Task1_Win, 0, 0);
+      wrefresh(Task1_Win);
+      write_window(Task1_Win, 6, 1, "Task 1 Window\n");
+
       wclear(Task2_Win);
+      box(Task2_Win, 0, 0);
+      wrefresh(Task2_Win);
+      write_window(Task2_Win, 6, 1, "Task 2 Window\n");
+
       wclear(Task3_Win);
+      box(Task3_Win, 0, 0);
+      wrefresh(Task3_Win);
+      write_window(Task3_Win, 6, 1, "Task 3 Window\n");
+
       wclear(Log_Win);
+
       write_window(Log_Win, 1, 5, "...Log Window...\n");
       write_window(Log_Win, "...Main program started...\n");
       write_window(Console_Win, 1, 1, "161-Ultima 2.0 # ");
