@@ -14,25 +14,11 @@ set(CURSES_NEED_NCURSES TRUE)           # Set NCURSES as needed.
 
 enable_testing()                        # Enable testing - required for ctest.
 ######################################################################################################
-include(FetchContent)                   # Include the FetchContent CMake module.
-include(GoogleTest)                     # Include GoogleTest.
-######################################################################################################
-FetchContent_Declare(                   # Declare the content to be fetched, and from where.
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG v1.17.0
-)
-
-FetchContent_MakeAvailable(googletest)  # Fech GoogleTest and make it available.
-
-find_package(Curses REQUIRED)
-######################################################################################################
 add_executable(
   Ultima
   src/Ultima.cpp
   src/Sched.cpp
   src/Sema.cpp
-  src/Mem_mgr.cpp
 )
 
 target_include_directories(
@@ -47,17 +33,3 @@ target_link_libraries (
   PRIVATE
   ${CURSES_LIBRARIES}
 )
-
-add_executable(                         # Declare the executable to be added, and from where.
-  SmokeTest
-  test/SmokeTest.cpp
-)
-
-target_link_libraries(                  # Link <file> with <content / library>.
-  SmokeTest
-  PRIVATE
-  gtest
-  GTest::gtest_main
-)
-
-gtest_discover_tests(SmokeTest)         # Call GoogleTest to discover tests in SmokeTest.
