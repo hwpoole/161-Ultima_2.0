@@ -23,9 +23,9 @@
  *  7.  long get_quantum()
  *      - A getter for the current quantum.
  *  8.  void set_state(int task_ID, string STATE)
- *      - Sets a specific task's STATE by task_id.
+ *      - Sets a specific task's STATE by task_ID.
  *  9.  string get_state(int task_ID)
- *      - A getter for the state of a task by task_id.
+ *      - A getter for the state of a task by task_ID.
  *  10. int get_task_id()
  *      - A getter for the current task's task_id.
  *  11. void start()

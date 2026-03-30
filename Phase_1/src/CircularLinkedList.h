@@ -86,7 +86,11 @@ public:
  *     - Returns the data portion of the node after the head.
  * 14. T get_end()
  *     - Returns the data portion of the tail.
- * 15. void dump()
+ * 15. void move_to_key(T key)
+ *     - Moves the linked list's head to point to the node matching the key.
+ * 16. void set_value(T value)
+ *     - Sets the current head's value to a new value.
+ * 17. void dump()
  *     - print method.
  *     - Dumps the current state of the CircularLinkedList.
  */

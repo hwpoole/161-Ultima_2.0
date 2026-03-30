@@ -1,6 +1,18 @@
 # Created by https://www.toptal.com/developers/gitignore/api/windows,macos,linux,intellij,intellij+all,intellij+iml,vim,visualstudiocode,visualstudio,cmake
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,macos,linux,intellij,intellij+all,intellij+iml,vim,visualstudiocode,visualstudio,cmake
 
+### Project Docs ###
+# Exclusively used for preparing the project phases for turn-in
+*/introduction/
+*/Introduction/
+introduction/
+Introduction/
+*/docs/
+*/Docs/
+docs/
+Docs/
+*.zip
+
 ### CMake ###
 CMakeLists.txt.user
 CMakeCache.txt
