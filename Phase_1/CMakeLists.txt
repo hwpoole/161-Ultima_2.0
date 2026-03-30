@@ -13,6 +13,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # Export a list of compile commands - us
 set(CURSES_NEED_NCURSES TRUE)           # Set NCURSES as needed.
 
 enable_testing()                        # Enable testing - required for ctest.
+
+find_package(Curses REQUIRED)           # Find NCURSES package.
 ######################################################################################################
 add_executable(
   Ultima
