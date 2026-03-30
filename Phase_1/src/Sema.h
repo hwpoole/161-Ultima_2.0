@@ -36,7 +36,9 @@
  *    - Stores the task_ids for the tasks waiting for access on the
  *      guarded resource.
  *    - Is a FIFO queue. Tasks may not proceed unless they are in the front.
- *
+ * 4. static Scheduler *scheduler;
+ *    - Stores a pointer to the scheduler.
+ *    - Required to communicate with the scheduler.
  * Hunter Poole
  * 03-28-2026
  */
