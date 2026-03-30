@@ -67,5 +67,5 @@ public:
 
   void up();
 
-  void dump();
+  string dump();
 };

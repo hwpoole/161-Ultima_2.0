@@ -12,6 +12,7 @@
 #include "Sema.h"
 #include <iostream>
 #include <queue>
+#include <sstream>
 
 // Allocate memory for static variable Scheduler *scheduler.
 Scheduler *Semaphore::scheduler = nullptr;
@@ -71,7 +72,7 @@ void Semaphore::down() {
  * In this way, we enforce the FIFO nature (or intent) of the sema_queue with
  * regards to resource access.
  *
- * 1. Checks if the sema_queue is empty.
+ * 1. Checks if the sema_queue is not empty.
  *    - If so, gets the next task's task_id.
  *    - Pops that task from the queue.
  *    - Sets its state to READY in the scheduler.
@@ -88,26 +89,29 @@ void Semaphore::up() {
   }
 }
 
-/* void Semaphore::dump() {...}
+/* string Semaphore::dump() {...}
  *
  * dump() is a "pretty print" to display the contents and current state of the
  * Semaphore.
  *
- * 1. Prints to the screen.
+ * 1. Build string with contents of the Semaphore.
  * 2. Copies the current queue into a print_queue.
  * 3. Reads, prints, appends, and pops on the print_queue.
+ * 4. Return the resulting string.
  */
-void Semaphore::dump() {
-  cout << "Resource: " << resource_name << endl;
-  cout << "Sema_value: " << sema_value << endl;
-  cout << "Sema_queue: ";
+string Semaphore::dump() {
+  stringstream ss;
+  ss << " Resource: " << resource_name << endl;
+  ss << " Sema_value: " << sema_value << endl;
+  ss << " Sema_queue: ";
 
   queue<int> print_queue = sema_queue;
 
   while (!print_queue.empty()) {
-    cout << print_queue.front();
+    ss << print_queue.front();
     print_queue.pop();
-    cout << " --> ";
+    ss << " --> ";
   }
-  cout << endl;
+  ss << endl;
+  return ss.str();
 }

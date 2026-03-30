@@ -283,7 +283,9 @@ void Scheduler::garbage_collect() {
   }
 }
 
-/* void dump() {...}
+#include <sstream>
+
+/* string dump() {...}
  *
  * "Pretty prints" a table containing the current state of the process table and
  * TCBList.
@@ -295,18 +297,23 @@ void Scheduler::garbage_collect() {
  *    - Get the elapsed_time.
  *    - Print the task_id, elapsed_time, and state.
  * 4. Advance again to return to starting position.
+ * 5. Return the resulting string.
  */
-void Scheduler::dump() {
-  cout << "---------- PROCESS TABLE ----------" << endl;
-  cout << "Quantum = " << current_quantum << endl;
-  cout << "Task-ID\t Elapsed Time\tState" << endl;
+string Scheduler::dump() {
+  stringstream ss;
+  ss << " ---------- PROCESS TABLE ----------" << endl;
+  ss << " Quantum = " << current_quantum << endl;
+  ss << " Task-ID\t Elapsed Time\tState" << endl;
 
-  for (int i = 0; i < TCBList.size() - 1; i++) {
+  for (int i = 0; i < TCBList.size(); i++) {
     TCB *current = TCBList.get_front();
     clock_t elapsed_time = clock() - current->start_time;
-    printf("%6d\t%8d\t%s", current->task_id, elapsed_time,
+    char buffer[256];
+    sprintf(buffer, " %6d\t%8d\t%s\n", current->task_id, (int)elapsed_time,
            current->state.c_str());
+    ss << buffer;
     TCBList.advance();
   }
-  TCBList.advance();
+  return ss.str();
 }
+
