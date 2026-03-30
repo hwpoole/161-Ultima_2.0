@@ -6,6 +6,7 @@
 
 #include "Sched.h"
 #include "Sema.h"
+#include <cstring>
 #include <ncurses.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -72,11 +73,19 @@ void *fake_work(WINDOW *task1_window, WINDOW *task2_window,
     TaskName = "Task 3";
   }
 
+  char task[7];
+  strcpy(task, TaskName.c_str());
+
   for (int i = 0; i < 10; i++) {
-    sprintf(buffer, "Task 1 running");
-    write_window(task1_window, buffer);
+    sprintf(buffer, "%s running", task);
+    write_window(current_window, buffer);
     sleep(1);
   }
+
+  sprintf(buffer, "%s yielding", task);
+  write_window(current_window, buffer);
+  sleep(1);
+  my_scheduler->yield();
 
   return (NULL);
 }
@@ -114,7 +123,9 @@ int main() {
   WINDOW *Task3_Win = create_window(15, 25, 15, 57);
   write_window(Task3_Win, 6, 1, "Task 3 Window");
 
-  fake_work(Task1_Win, Task2_Win, Task3_Win);
+  for (int i = 0; i < 3; i++) {
+    fake_work(Task1_Win, Task2_Win, Task3_Win);
+  }
 
   // I/O processing
   cbreak();
