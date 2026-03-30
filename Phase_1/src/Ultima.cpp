@@ -8,8 +8,16 @@
 #include "Sema.h"
 #include <ncurses.h>
 #include <stdarg.h>
+#include <unistd.h>
 
 using namespace std;
+
+Scheduler *my_scheduler = new Scheduler();
+Semaphore *my_semaphore = new Semaphore("The Thing");
+
+int Task1 = my_scheduler->create_task();
+int Task2 = my_scheduler->create_task();
+int Task3 = my_scheduler->create_task();
 
 WINDOW *create_window(int height, int width, int starty, int startx) {
   WINDOW *Win;
@@ -46,13 +54,37 @@ void display_help(WINDOW *Win) {
   write_window(Win, 7, 1, "q= Quit");
 }
 
-int main() {
-  Scheduler *my_scheduler = new Scheduler();
-  Semaphore::set_scheduler(my_scheduler);
+void *fake_work(WINDOW *task1_window, WINDOW *task2_window,
+                WINDOW *task3_window) {
+  int current_task = my_scheduler->get_task_id();
+  char buffer[256];
+  WINDOW *current_window = nullptr;
+  string TaskName;
 
-  int Task1 = my_scheduler->create_task();
-  int Task2 = my_scheduler->create_task();
-  int Task3 = my_scheduler->create_task();
+  if (current_task == Task1) {
+    current_window = task1_window;
+    TaskName = "Task 1";
+  } else if (current_task == Task2) {
+    current_window = task2_window;
+    TaskName = "Task 2";
+  } else if (current_task == Task3) {
+    current_window = task3_window;
+    TaskName = "Task 3";
+  }
+
+  for (int i = 0; i < 10; i++) {
+    sprintf(buffer, "Task 1 running");
+    write_window(task1_window, buffer);
+    sleep(1);
+  }
+
+  return (NULL);
+}
+
+void *fake_work_with_semaphore() { return (NULL); }
+
+int main() {
+  Semaphore::set_scheduler(my_scheduler);
 
   initscr();
 
@@ -81,4 +113,15 @@ int main() {
   write_window(Task2_Win, 6, 1, "Task 2 Window");
   WINDOW *Task3_Win = create_window(15, 25, 15, 57);
   write_window(Task3_Win, 6, 1, "Task 3 Window");
+
+  fake_work(Task1_Win, Task2_Win, Task3_Win);
+
+  // I/O processing
+  cbreak();
+  noecho();
+  nodelay(Console_Win, TRUE);
+  keypad(Console_Win, TRUE);
+
+  char buffer[256];
+  int input = -1;
 }
