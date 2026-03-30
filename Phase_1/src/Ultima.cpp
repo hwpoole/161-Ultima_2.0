@@ -24,6 +24,8 @@ WINDOW *Task1_Win;
 WINDOW *Task2_Win;
 WINDOW *Task3_Win;
 
+static int task_PCs[4] = {0, 0, 0, 0};
+
 WINDOW *create_window(int height, int width, int starty, int startx) {
   WINDOW *Win;
 
@@ -93,10 +95,65 @@ void *fake_work() {
   return (NULL);
 }
 
-void *fake_work_with_semaphore() { return (NULL); }
+void *fake_work_with_semaphore() {
+  int current_task = my_scheduler->get_task_id();
+  WINDOW *win = (current_task == Task1)   ? Task1_Win
+                : (current_task == Task2) ? Task2_Win
+                                          : Task3_Win;
+  const char *name = (current_task == Task1)   ? "Task 1"
+                     : (current_task == Task2) ? "Task 2"
+                                               : "Task 3";
+  char buffer[256];
+  int &pc = task_PCs[current_task];
+
+  switch (pc) {
+  case 0:
+    sprintf(buffer, " %s wants Sema\n", name);
+    write_window(win, buffer);
+    my_semaphore->down();
+
+    pc++;
+
+    if (my_scheduler->get_state(current_task) == BLOCKED) {
+      return (NULL);
+    }
+
+    sleep(1);
+    my_scheduler->yield();
+    break;
+  case 1:
+    sprintf(buffer, " %s in crit region\n", name);
+    write_window(win, buffer);
+    pc++;
+
+    sleep(1);
+    my_scheduler->yield();
+    break;
+  case 2:
+    sprintf(buffer, " %s releases Sema\n", name);
+    write_window(win, buffer);
+    my_semaphore->up();
+    pc++;
+
+    sleep(1);
+    my_scheduler->yield();
+    break;
+  case 3:
+    sprintf(buffer, " %s finished\n", name);
+    write_window(win, buffer);
+    pc++;
+
+    sleep(1);
+    break;
+  }
+
+  my_scheduler->yield();
+  return (NULL);
+}
 
 int main() {
   Semaphore::set_scheduler(my_scheduler);
+  my_scheduler->set_quantum(1);
 
   initscr();
 
@@ -142,16 +199,22 @@ int main() {
 
     switch (input) {
     case '1':
-      write_window(Log_Win, "Scenario 1: One Task At A Time\n");
+      write_window(Log_Win, " Scenario 1: One Task At A Time\n");
       for (int i = 0; i < 3; i++) {
         fake_work();
       }
+      write_window(Log_Win, " Scenario 1 Finished\n");
       break;
     case '2':
       write_window(Log_Win,
-                   "Scenario 2: Each Task wants the critical region\n");
-      for (int i = 0; i < 6; i++) {
+                   " Scenario 2: Each Task wants the critical region\n");
+      for (int i = 0; i < 30; i++) {
         fake_work_with_semaphore();
+      }
+      write_window(Log_Win, " Scenario 2 Finished\n");
+
+      for (int i = 0; i < 3; i++) {
+        task_PCs[i] = 0;
       }
       break;
     case '3':
