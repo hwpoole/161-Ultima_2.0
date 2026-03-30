@@ -104,5 +104,5 @@ public:
 
   void garbage_collect();
 
-  void dump();
+  string dump();
 };

@@ -104,11 +104,11 @@ void display_help(WINDOW *Win) {
   wclear(Win);
   write_window(Win, 1, 1, "...Help...");
   write_window(Win, 2, 1, "1= Scenario 1");
-  write_window(Win, 3, 1, "2= Secnario 2");
-  // write_window(Win, 4, 1, "3= Scenario 3");
-  write_window(Win, 4, 1, "c= Clear screen");
-  write_window(Win, 5, 1, "h= Help screen");
-  write_window(Win, 6, 1, "q= Quit");
+  write_window(Win, 3, 1, "2= Scenario 2");
+  write_window(Win, 4, 1, "3= Dump Sched/Sema");
+  write_window(Win, 5, 1, "c= Clear screen");
+  write_window(Win, 6, 1, "h= Help screen");
+  write_window(Win, 7, 1, "q= Quit");
 }
 
 /* void *fake_work() {...}
@@ -326,7 +326,22 @@ int main() {
         task_PCs[i] = 0;
       }
       break;
-    case '3': // Incomplete Scenario 3.
+    case '3': // Scenario 3 - Dump Sched/Sema
+      wclear(Log_Win);
+      write_window(Log_Win, " Scenario 3: Scheduler Dump\n");
+      write_window(Log_Win, my_scheduler->dump().c_str());
+      wrefresh(Log_Win);
+      sleep(3);
+
+      wclear(Log_Win);
+      write_window(Log_Win, " Scenario 3: Semaphore Dump\n");
+      write_window(Log_Win, my_semaphore->dump().c_str());
+      wrefresh(Log_Win);
+      sleep(3);
+
+      wclear(Log_Win);
+      write_window(Log_Win, 1, 5, "...Log Window...\n");
+      write_window(Log_Win, " Scenario 3 Finished\n");
       break;
     case 'c': // Clear windows.
       wclear(Console_Win);
