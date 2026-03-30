@@ -24,9 +24,18 @@ FetchContent_Declare(                   # Declare the content to be fetched, and
 
 FetchContent_MakeAvailable(googletest)  # Fech GoogleTest and make it available.
 ######################################################################################################
+add_executable(
+  Ultima
+  src/Ultima.cpp
+)
+
 add_executable(                         # Declare the executable to be added, and from where.
   SmokeTest
   test/SmokeTest.cpp
+)
+
+target_link_libraries(
+
 )
 
 target_link_libraries(                  # Link <file> with <content / library>.
