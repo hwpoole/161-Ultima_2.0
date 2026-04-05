@@ -78,6 +78,13 @@ CMakeUserPresets.json
 # CMake
 cmake-build-*/
 */build/
+*/build/*
+Phases/Phase_1/build/
+Phases/Phase_2/build/
+Phases/Phase_3/build/
+Phases/Phase_4/build/
+Phases/Phase_5/build/
+Phases/Phase_6/build/
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
