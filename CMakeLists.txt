@@ -14,9 +14,21 @@ set(CURSES_NEED_NCURSES TRUE)           # Set NCURSES as needed.
 
 enable_testing()                        # Enable testing - required for ctest.
 
+include(FetchContent)                   # Include the FetchContent CMake feature.
+include(GoogleTest)                     # Include GoogleTest.
+
 find_package(Curses REQUIRED)           # Find NCURSES package.
 ######################################################################################################
-add_executable(
+FetchContent_Declare(                   # Define the content that is needed, and where to get it from.
+  GoogleTest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG v1.17.0
+  FING_PACKAGE_ARGS NAMES GTest         # Try to find GoogleTest locally before fetching it from GH.
+)
+
+FetchContent_MakeAvailable(GoogleTest)  # Fetch and make GoogleTest available.
+######################################################################################################
+add_executable(                         # 
   Ultima
   src/Ultima.cpp
   src/Sched.cpp
@@ -35,3 +47,25 @@ target_link_libraries (
   PRIVATE
   ${CURSES_LIBRARIES}
 )
+######################################################################################################
+add_executable(
+  KernelTest
+  test/KernelTest.cpp
+)
+
+target_include_directories(
+  KernelTest
+  PRIVATE
+  "${CMAKE_SOURCE_DIR}/src"
+)
+
+target_link_libraries(
+  KernelTest
+  PRIVATE
+  gtest
+  GTest::gtest_main
+  GTest::gmock
+  GTest::gmock_main
+)
+
+gtest_discover_tests(KernelTest)
