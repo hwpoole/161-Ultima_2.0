@@ -39,6 +39,7 @@ target_include_directories(
   Ultima
   PRIVATE
   "${CMAKE_SOURCE_DIR}/src"
+  "${CMAKE_SOURCE_DIR}/include"
   ${CURSES_INCLUDE_DIRS}
 )
 
