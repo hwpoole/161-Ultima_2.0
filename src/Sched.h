@@ -11,6 +11,7 @@
  *      - A destructor.
  *  3.  int create_task()
  *      - Creates a new task at the end of the queue.
+ *      - Returns that task's task_ID.
  *  4.  void kill_task()
  *      - Kills the current task and calls garbage_collect().
  *  5.  void yield()

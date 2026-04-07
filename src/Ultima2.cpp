@@ -100,6 +100,19 @@ int main() {
   Semaphore::set_scheduler(scheduler);
   scheduler->set_quantum(1);
 
+  // Create all tasks with the scheduler.
+  int Task1 = scheduler->create_task();
+  int Task2 = scheduler->create_task();
+  int Task3 = scheduler->create_task();
+
+  // Create all pthread_t
+  pthread_t Thread1, Thread2, Thread3;
+
+  // Register each Thread with its Task.
+  scheduler->set_pthread_t(Task1, Thread1);
+  scheduler->set_pthread_t(Task2, Thread2);
+  scheduler->set_pthread_t(Task3, Thread3);
+
   // Initializes the ncurses screen.
   initscr();
 
