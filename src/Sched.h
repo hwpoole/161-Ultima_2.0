@@ -102,13 +102,9 @@ public:
 
   int get_task_id();
 
-  void set_pthread_t(int task_ID);
+  void set_pthread_t(int task_ID, pthread_t thread_ID);
 
-  void set_pthread_t();
-
-  int get_pthread_t(int task_ID);
-
-  int get_pthread_t();
+  pthread_t get_pthread_t(int task_ID);
 
   void start();
 

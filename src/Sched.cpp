@@ -225,6 +225,74 @@ int Scheduler::get_task_id() {
   return (current->task_id);
 }
 
+/* void set_pthread_t(int task_ID, pthread_t thread_ID) {...}
+ *
+ * A setter method for a given task_ID's pthread_t thread_ID.
+ *
+ * 1. Declares current TCB from the front of TCBList.
+ * 2. Checks if head *does not* have the task ID.
+ *    - Iterate through TCBList until it does.
+ *    - Update temp TCB with thread_ID.
+ *    - Save temp to TCBList.
+ *    - Move back to starting point, "current."
+ * 3. Else,
+ *    - Updates the TCB 'current'
+ *    - Then, sets the TCBList value for that.
+ */
+void Scheduler::set_pthread_t(int task_ID, pthread_t thread_ID) {
+  TCB *current = TCBList.get_front();
+
+  if (current->task_id != task_ID) {
+    TCB *temp = current;
+
+    int counter = 0;
+    while (temp->task_id != task_ID && counter < TCBList.size()) {
+      TCBList.advance();
+      temp = TCBList.get_front();
+      counter++;
+    }
+
+    temp->thread_id = thread_ID;
+    TCBList.set_value(temp);
+    TCBList.move_to_key(current);
+  } else {
+    current->thread_id = thread_ID;
+    TCBList.set_value(current);
+  }
+}
+
+/* pthread_t get_pthread_t(int task_ID) {...}
+ *
+ * A getter method for a given task_ID's pthred_t thread_ID.
+ *
+ * 1. Declares current TCB from the front of TCBList.
+ * 2. Checks if head *does not* have the task ID.
+ *    - Iterate through TCBList until it does.
+ *    - Move back to starting point.
+ *    - Return temp's thread_ID.
+ * 3. Else,
+ *    - Return current's thread_ID.
+ */
+pthread_t Scheduler::get_pthread_t(int task_ID) {
+  TCB *current = TCBList.get_front();
+
+  if (current->task_id != task_ID) {
+
+    TCB *temp = current;
+    int counter = 0;
+    while (temp->task_id != task_ID && counter < TCBList.size()) {
+      TCBList.advance();
+      temp = TCBList.get_front();
+      counter++;
+    }
+
+    TCBList.move_to_key(current);
+    return temp->thread_id;
+  } else {
+    return current->thread_id;
+  }
+}
+
 /* void start() {...}
  *
  * Starts the scheduler and sets the first task's state to RUNNING.
@@ -310,10 +378,9 @@ string Scheduler::dump() {
     clock_t elapsed_time = clock() - current->start_time;
     char buffer[256];
     sprintf(buffer, " %6d\t%8d\t%s\n", current->task_id, (int)elapsed_time,
-           current->state.c_str());
+            current->state.c_str());
     ss << buffer;
     TCBList.advance();
   }
   return ss.str();
 }
-
