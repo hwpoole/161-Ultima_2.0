@@ -54,6 +54,7 @@
 #pragma once
 
 #include "CircularLinkedList.h"
+#include <pthread.h>
 #include <string>
 
 using namespace std;
@@ -69,6 +70,7 @@ struct TCB {
   int task_id;
   string state;
   clock_t start_time;
+  pthread_t thread_id;
 };
 
 class Scheduler {
