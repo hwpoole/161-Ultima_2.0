@@ -16,9 +16,11 @@ using namespace std;
 Scheduler *scheduler = new Scheduler();
 Semaphore *semaphore = new Semaphore("Text");
 
+/*
 int Task1 = scheduler->create_task();
 int Task2 = scheduler->create_task();
 int Task3 = scheduler->create_task();
+*/
 
 WINDOW *Task1_Win;
 WINDOW *Task2_Win;
@@ -94,12 +96,31 @@ void display_help(WINDOW *Win) {
   write_window(Win, 7, 1, "q= Quit");
 }
 
-void fake_work() {
-  WINDOW *win;
+void *fake_work(void *args) {
+  int task = *(int *)args;
   const char *name;
+  WINDOW *win;
   char buffer[256];
 
+  switch (task) {
+  case 0:
+    name = "Task 1";
+    win = Task1_Win;
+    break;
+  case 1:
+    name = "Task 2";
+    win = Task2_Win;
+    break;
+  case 2:
+    name = "Task 3";
+    win = Task3_Win;
+    break;
+  default:
+    break;
+  }
+
   for (int i = 0; i < 5; i++) {
+    semaphore->down();
     sprintf(buffer, " %s running\n", name);
     write_window(win, buffer);
     this_thread::sleep_for(chrono::milliseconds(500));
@@ -108,7 +129,10 @@ void fake_work() {
   sprintf(buffer, " %s yielding\n", name);
   write_window(win, buffer);
   this_thread::sleep_for(chrono::milliseconds(500));
+  semaphore->up();
   scheduler->yield();
+
+  return (NULL);
 }
 
 void *fake_work_with_sema() {
@@ -165,17 +189,46 @@ int main() {
   write_window(Console_Win, 1, 1, "...Console...\n");
   write_window(Console_Win, 2, 1, "161-Ultima 2.0 #\n");
 
-  WINDOW *Thread1_Win = create_window(15, 25, 15, 2);
-  write_window(Thread1_Win, 6, 1, "Thread 1\n");
-  scheduler->set_state(Task1, READY);
+  Task1_Win = create_window(15, 25, 15, 2);
+  write_window(Task1_Win, 6, 1, "Thread 1\n");
 
-  WINDOW *Thread2_Win = create_window(15, 25, 15, 30);
-  write_window(Thread2_Win, 6, 1, "Thread 2\n");
-  scheduler->set_state(Task2, READY);
+  Task2_Win = create_window(15, 25, 15, 30);
+  write_window(Task2_Win, 6, 1, "Thread 2\n");
 
-  WINDOW *Thread3_Win = create_window(15, 25, 15, 57);
-  write_window(Thread3_Win, 6, 1, "Thread 3\n");
-  scheduler->set_state(Task3, READY);
+  Task3_Win = create_window(15, 25, 15, 57);
+  write_window(Task3_Win, 6, 1, "Thread 3\n");
+
+  cbreak();
+  noecho();
+  nodelay(Console_Win, TRUE);
+  keypad(Console_Win, TRUE);
+  mousemask(ALL_MOUSE_EVENTS, NULL);
+
+  char buffer[256];
+  int input = -1;
+
+  while (input != 'q') {
+    input = wgetch(Console_Win);
+
+    switch (input) {
+    case '1': // Scenario 1.
+      write_window(Log_Win, " Scenario 1: One Task At A Time\n");
+
+      scheduler->start();
+      pthread_create(&Thread1, NULL, fake_work, &Task1);
+      pthread_create(&Thread2, NULL, fake_work, &Task2);
+      pthread_create(&Thread3, NULL, fake_work, &Task3);
+
+      pthread_join(Thread1, NULL);
+      pthread_join(Thread2, NULL);
+      pthread_join(Thread3, NULL);
+
+      write_window(Log_Win, " Scenario 1 Finished\n");
+      break;
+    default:
+      break;
+    }
+  }
 
   return 0;
 }
