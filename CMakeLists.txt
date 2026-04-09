@@ -39,12 +39,31 @@ target_include_directories(
   Ultima
   PRIVATE
   "${CMAKE_SOURCE_DIR}/src"
-  "${CMAKE_SOURCE_DIR}/include"
   ${CURSES_INCLUDE_DIRS}
 )
 
-target_link_libraries (
+target_link_libraries(
   Ultima
+  PRIVATE
+  ${CURSES_LIBRARIES}
+)
+
+add_executable(
+  Ultima2
+  src/Ultima2.cpp
+  src/Sched.cpp
+  src/Sema.cpp
+)
+
+target_include_directories(
+  Ultima2
+  PRIVATE
+  "${CMAKE_SOURCE_DIR}/src"
+  ${CURSES_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+  Ultima2
   PRIVATE
   ${CURSES_LIBRARIES}
 )
