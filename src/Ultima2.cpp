@@ -6,6 +6,9 @@
 #include "Sched.h"
 #include "Sema.h"
 #include <ncurses.h>
+#include <pthread.h>
+#include <thread>
+#include <unistd.h>
 
 using namespace std;
 
@@ -91,9 +94,41 @@ void display_help(WINDOW *Win) {
   write_window(Win, 7, 1, "q= Quit");
 }
 
-void *fake_work() { return (NULL); }
+void fake_work() {
+  WINDOW *win;
+  const char *name;
+  char buffer[256];
 
-void *fake_work_with_sema() { return (NULL); }
+  for (int i = 0; i < 5; i++) {
+    sprintf(buffer, " %s running\n", name);
+    write_window(win, buffer);
+    this_thread::sleep_for(chrono::milliseconds(500));
+  }
+
+  sprintf(buffer, " %s yielding\n", name);
+  write_window(win, buffer);
+  this_thread::sleep_for(chrono::milliseconds(500));
+  scheduler->yield();
+}
+
+void *fake_work_with_sema() {
+  int current_task = scheduler->get_task_id();
+  WINDOW *win;
+  const char *name;
+  char buffer[256];
+
+  sprintf(buffer, " %s wants Sema\n", name);
+  write_window(win, buffer);
+  semaphore->down();
+
+  if (scheduler->get_state(current_task) == BLOCKED) {
+    sprintf(buffer, " %s was blocked\n", name);
+    write_window(win, buffer);
+    this_thread::sleep_for(chrono::milliseconds(500));
+  }
+
+  return (NULL);
+}
 
 int main() {
   // Register scheduler with semaphore and set quantum LOW to force yields.
@@ -129,6 +164,18 @@ int main() {
   WINDOW *Console_Win = create_window(10, 20, 30, 62);
   write_window(Console_Win, 1, 1, "...Console...\n");
   write_window(Console_Win, 2, 1, "161-Ultima 2.0 #\n");
+
+  WINDOW *Thread1_Win = create_window(15, 25, 15, 2);
+  write_window(Thread1_Win, 6, 1, "Thread 1\n");
+  scheduler->set_state(Task1, READY);
+
+  WINDOW *Thread2_Win = create_window(15, 25, 15, 30);
+  write_window(Thread2_Win, 6, 1, "Thread 2\n");
+  scheduler->set_state(Task2, READY);
+
+  WINDOW *Thread3_Win = create_window(15, 25, 15, 57);
+  write_window(Thread3_Win, 6, 1, "Thread 3\n");
+  scheduler->set_state(Task3, READY);
 
   return 0;
 }
