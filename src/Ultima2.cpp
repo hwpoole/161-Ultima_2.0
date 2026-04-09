@@ -116,5 +116,19 @@ int main() {
   // Initializes the ncurses screen.
   initscr();
 
+  WINDOW *Heading_Win = newwin(10, 80, 3, 2);
+  box(Heading_Win, 0, 0);
+  mvwprintw(Heading_Win, 2, 28, "161-ULTIMA 2.0 PHASE 2 DEMO");
+  mvwprintw(Heading_Win, 4, 2, "Press 'h' to view the scenarios.");
+  mvwprintw(Heading_Win, 5, 2, "Press 'q' or Crtl-C to exit the program.");
+  wrefresh(Heading_Win);
+
+  WINDOW *Log_Win = create_window(10, 60, 30, 2);
+  write_window(Log_Win, 1, 5, "...Log Window...\n");
+
+  WINDOW *Console_Win = create_window(10, 20, 30, 62);
+  write_window(Console_Win, 1, 1, "...Console...\n");
+  write_window(Console_Win, 2, 1, "161-Ultima 2.0 #\n");
+
   return 0;
 }
