@@ -11,7 +11,11 @@
 
 #include "Sched.h"
 #include "CircularLinkedList.h"
+#include "Kernel.h"
 #include <ctime>
+#include <pthread.h>
+#include <signal.h>
+#include <sstream>
 
 /* Scheduler() {...}
  *
@@ -52,6 +56,7 @@ Scheduler::~Scheduler() {
  * 1. Create a NewTask TCB.
  *    - Assign its task ID from next_available.
  *    - Set state READY.
+ *    - Initialize thread_cond.
  * 2. Insert that TCB at the end of the queue.
  * 3. Increment next_available_task_id.
  * 4. Return created task's task_id.
@@ -60,6 +65,7 @@ int Scheduler::create_task() {
   TCB *NewTask = new TCB();
   NewTask->task_id = next_available_task_id;
   NewTask->state = READY;
+  NewTask->thread_cond = PTHREAD_COND_INITIALIZER;
   TCBList.insert_end(NewTask);
 
   next_available_task_id++;
@@ -74,7 +80,8 @@ int Scheduler::create_task() {
  *    - If so, do nothing (return).
  * 2. Get the TCB at the front of the queue.
  * 3. Set it's state to DEAD.
- * 4. Call garbage_collect().
+ * 4. Cancels the pthread.
+ * 5. Call garbage_collect().
  */
 void Scheduler::kill_task() {
   if (TCBList.is_empty()) {
@@ -83,6 +90,7 @@ void Scheduler::kill_task() {
 
   TCB *current = TCBList.get_front();
   current->state = DEAD;
+  pthread_cancel(current->thread_id);
   TCBList.set_value(current);
 
   garbage_collect();
@@ -105,7 +113,7 @@ void Scheduler::kill_task() {
  *    3c. Then, move to the next READY task.
  *    3d. Then, update that task's state to RUNNING.
  * 4. Update the current process_table and current_task.
- */
+ *
 void Scheduler::yield() {
   if (TCBList.is_empty()) {
     return;
@@ -139,6 +147,52 @@ void Scheduler::yield() {
 
   process_table = TCBList.get_front();
   current_task = process_table->task_id;
+}
+*/
+
+void Scheduler::yield() {
+  bool will_yeild = false;
+
+  if (TCBList.is_empty()) {
+    return;
+  }
+
+  TCB *current = TCBList.get_front();
+  TCB *next = TCBList.get_front();
+  clock_t elapsed_time = clock() - current->start_time;
+
+  if (current->state == BLOCKED || elapsed_time >= current_quantum) {
+    if (current->state == RUNNING) {
+      current->state = READY;
+      TCBList.set_value(current);
+      will_yeild = true;
+    }
+
+    TCBList.advance();
+    int counter = 0;
+    while (next->state != READY && counter < TCBList.size() - 1) {
+      TCBList.advance();
+      next = TCBList.get_front();
+      counter++;
+    }
+
+    if (next->state == READY && counter < TCBList.size() - 1) {
+      will_yeild = true;
+    }
+  }
+
+  if (will_yeild) {
+    next->state = RUNNING;
+    next->start_time = clock();
+    TCBList.set_value(next);
+    pthread_cond_signal(&next->thread_cond);
+
+    while (current->state != RUNNING) {
+      pthread_cond_wait(&current->thread_cond, &Kernel::CPULocker);
+    }
+  } else {
+    TCBList.move_to_key(current);
+  }
 }
 
 /* void set_quantum(long quantum) {...}
@@ -218,11 +272,34 @@ string Scheduler::get_state(int task_ID) {
 
 /* int get_task_id() {...}
  *
- * A getter method for the current task_id from the front of the TCBList.
+ * A getter method for the current pthread's task_id from the TCBList.
+ *
+ * 1. Saves the current position in TCBList.
+ * 2. Gets the current pthread_t.
+ * 3. Finds the node with a matching pthread_t.
+ * 4. Collects that node's task_id.
+ * 5. Moves back to the starting position.
+ * 6. Returns task_id.
  */
 int Scheduler::get_task_id() {
   TCB *current = TCBList.get_front();
-  return (current->task_id);
+  TCB *found = current;
+  pthread_t self = pthread_self();
+  int count = 0;
+  int task_id;
+
+  while (self != found->thread_id && count < TCBList.size() - 1) {
+    TCBList.advance();
+    found = TCBList.get_front();
+    count++;
+  }
+
+  if (count < TCBList.size() - 1) {
+    task_id = found->task_id;
+  }
+
+  TCBList.move_to_key(current);
+  return (task_id);
 }
 
 /* void set_pthread_t(int task_ID, pthread_t thread_ID) {...}
@@ -277,7 +354,6 @@ pthread_t Scheduler::get_pthread_t(int task_ID) {
   TCB *current = TCBList.get_front();
 
   if (current->task_id != task_ID) {
-
     TCB *temp = current;
     int counter = 0;
     while (temp->task_id != task_ID && counter < TCBList.size()) {
@@ -290,6 +366,25 @@ pthread_t Scheduler::get_pthread_t(int task_ID) {
     return temp->thread_id;
   } else {
     return current->thread_id;
+  }
+}
+
+pthread_cond_t *Scheduler::get_cond_t(int task_ID) {
+  TCB *current = TCBList.get_front();
+
+  if (current->task_id != task_ID) {
+    TCB *temp = current;
+    int counter = 0;
+    while (temp->task_id != task_ID && counter < TCBList.size() - 1) {
+      TCBList.advance();
+      temp = TCBList.get_front();
+      counter++;
+    }
+
+    TCBList.move_to_key(current);
+    return &temp->thread_cond;
+  } else {
+    return &current->thread_cond;
   }
 }
 
@@ -350,8 +445,6 @@ void Scheduler::garbage_collect() {
     current_task = -1;
   }
 }
-
-#include <sstream>
 
 /* string dump() {...}
  *

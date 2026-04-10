@@ -72,6 +72,7 @@ struct TCB {
   string state;
   clock_t start_time;
   pthread_t thread_id;
+  pthread_cond_t thread_cond;
 };
 
 class Scheduler {
@@ -106,6 +107,8 @@ public:
   void set_pthread_t(int task_ID, pthread_t thread_ID);
 
   pthread_t get_pthread_t(int task_ID);
+
+  pthread_cond_t *get_cond_t(int task_ID);
 
   void start();
 
