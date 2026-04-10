@@ -464,6 +464,15 @@ public:
     head->data = value;
   }
 
+  /* void set_nextvalue(T value) {...}
+   *
+   * Sets the data portion of the node after the head.
+   */
+  void set_nextvalue(T value) {
+    lock_guard<std::mutex> lock(ListLocker);
+    head->next->data = value;
+  }
+
   /* void dump() {...}
    *
    * Prints the current status of the list.
