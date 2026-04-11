@@ -19,11 +19,10 @@ using namespace std;
 typedef pthread_t uthread_t;
 
 class uthread {
-private:
-  Kernel *KernelPtr = Kernel::GetInstance();
-
 public:
-  int create(uthread_t newthread, void *(*start_routine)(void *), void *arg);
+  uthread() = default;
+
+  int create(uthread_t *newthread, void *(*start_routine)(void *), void *arg);
 
   int join(uthread_t th, void **thread_return);
 

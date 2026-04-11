@@ -8,11 +8,11 @@
 #include "Uthread.h"
 #include "Kernel.h"
 
-int uthread::create(uthread_t newthread, void *(*start_routine)(void *),
+int uthread::create(uthread_t *newthread, void *(*start_routine)(void *),
                     void *arg) {
-  return KernelPtr->CreateTask(newthread, start_routine, arg);
+  return Kernel::Get_Instance()->Create_Task(newthread, start_routine, arg);
 }
 
 int uthread::join(uthread_t th, void **thread_return) {
-  return KernelPtr->JoinTask(th, thread_return);
+  return Kernel::Get_Instance()->Join_Task(th, thread_return);
 }
