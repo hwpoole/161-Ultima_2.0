@@ -4,19 +4,64 @@
  * Seeing a need to coordinate resources between classes in a
  * "behind-the-scenes" way, this Kernel class was born.
  *
+ * The Kernel class allows us to build the Ultima demo on top of Ultima's
+ * primitives, *without* exposing the "wiring" to the programmer.
+ * In this way, we hope that programming for the Ultima 2.0 OS is as similar to
+ * programming for pthreads as possible.
+ *
  * Hunter Poole
  * 04-05-2026
  */
 
 #pragma once
 
-#include "Sched.h"
-#include "Sema.h"
-#include "Uthread.h"
+#include "Sched.h"   // The Scheduler.
+#include "Sema.h"    // The Semaphore.
+#include "Uthread.h" // Uthreads, our wrapper on pthreads.
 #include <pthread.h>
 
+// uthread_t is a pthread_t.
 typedef pthread_t uthread_t;
 
+/* class Kernel
+ *
+ * The Kernel class is a Singleton Monitor class.
+ * Its role is to coordinate resource access across all other Ultima 2.0
+ * classes.
+ *
+ * Private variables:
+ *  1. static *KernelPtr
+ *    - A pointer to itself.
+ *  2. *scheduler
+ *    - A pointer to the scheduler.
+ *  3. Sema_Vector
+ *    - a vector to track the created Semaphores.
+ *
+ * Private methods:
+ *  1. Kernel()
+ *    - A no-arg constructor.
+ *  2. ~Kernel()
+ *    - A deconstructor.
+ *  3. static void Bootstrap_Wrapper(void *context)
+ *    - A wrapper to transition from pthread_create to Bootstrap.
+ *  4. void Bootstrap(void *context)
+ *    - Puts all threads in "The Scheduler Waiting Room."
+ *
+ * Public vairables:
+ *  1. static CPULocker
+ *    - A pthread_mutex_t. Used frequently in coordinated classes.
+ *  2. static Kernel *Get_Instance()
+ *    - Returns a pointer to the Kernel.
+ *  3. int Create_Task(uthread_t *newthread, void *(*start_routine)(void *),
+ *     void *arg)
+ *    - Used to create a task and send it to Bootstrap_Wrapper.
+ *  4. int Join_Task(uthread_t th, void **thread_return)
+ *    - Similar to pthread_join. Waits for a uthread_t to finish.
+ *  5. Semaphore *Create_Semaphore(const char *name).
+ *    - Returns a Semaphore pointer registered with the Kernel.
+ *  6. Scheduler *Get_Scheduler()
+ *    - Returns a pointer to the scheduler.
+ */
 class Kernel {
 private:
   static inline Kernel *KernelPtr = nullptr;
@@ -52,14 +97,31 @@ public:
   int Create_Task(uthread_t *newthread, void *(*start_routine)(void *),
                   void *arg);
 
-  //
+  // TODO: Implement.
   int Join_Task(uthread_t th, void **thread_return);
 
+  // Wrapper for creating semaphores and registering with Kernel.
   Semaphore *Create_Semaphore(const char *name);
 
+  // Getter for *scheduler.
   Scheduler *Get_Scheduler();
 };
 
+/* struct Context
+ *
+ * Context is used as an intermediary to extract and condense arguments passed
+ * through all methods of Kernel that accept void *arg.
+ *
+ * 1. Kernel *kernel.
+ *    - A pointer to this Kernel, for *explicit* calls to "this" by static
+ *      methods Bootstrap_Wrapper()
+ * 2. int task_id.
+ *    - The Task's task_id.
+ * 3. void *(*start_routine)(void *)
+ *    - The start_routine for a task.
+ * 4. void *arg.
+ *    - The arguments for a task's start_routine.
+ */
 struct Context {
   Kernel *kernel;
   int task_id;
