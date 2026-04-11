@@ -151,37 +151,39 @@ void Scheduler::yield() {
 */
 
 void Scheduler::yield() {
-  bool will_yeild = false;
+  bool will_yield = false;
 
   if (TCBList.is_empty()) {
     return;
   }
 
   TCB *current = TCBList.get_front();
-  TCB *next = TCBList.get_front();
+  TCB *next;
   clock_t elapsed_time = clock() - current->start_time;
 
-  if (current->state == BLOCKED || elapsed_time >= current_quantum) {
+  if (current->state == BLOCKED || current->state == DEAD ||
+      elapsed_time >= current_quantum) {
     if (current->state == RUNNING) {
       current->state = READY;
       TCBList.set_value(current);
-      will_yeild = true;
+      will_yield = true;
     }
 
     TCBList.advance();
+    next = TCBList.get_front();
     int counter = 0;
-    while (next->state != READY && counter < TCBList.size() - 1) {
+    while (next->state != READY && counter < TCBList.size()) {
       TCBList.advance();
       next = TCBList.get_front();
       counter++;
     }
 
-    if (next->state == READY && counter < TCBList.size() - 1) {
-      will_yeild = true;
+    if (next->state == READY && counter < TCBList.size()) {
+      will_yield = true;
     }
   }
 
-  if (will_yeild) {
+  if (will_yield) {
     next->state = RUNNING;
     next->start_time = clock();
     TCBList.set_value(next);
@@ -286,15 +288,15 @@ int Scheduler::get_task_id() {
   TCB *found = current;
   pthread_t self = pthread_self();
   int count = 0;
-  int task_id;
+  int task_id = -1;
 
-  while (self != found->thread_id && count < TCBList.size() - 1) {
+  while (self != found->thread_id && count < TCBList.size()) {
     TCBList.advance();
     found = TCBList.get_front();
     count++;
   }
 
-  if (count < TCBList.size() - 1) {
+  if (count < TCBList.size()) {
     task_id = found->task_id;
   }
 
@@ -375,7 +377,7 @@ pthread_cond_t *Scheduler::get_cond_t(int task_ID) {
   if (current->task_id != task_ID) {
     TCB *temp = current;
     int counter = 0;
-    while (temp->task_id != task_ID && counter < TCBList.size() - 1) {
+    while (temp->task_id != task_ID && counter < TCBList.size()) {
       TCBList.advance();
       temp = TCBList.get_front();
       counter++;
