@@ -3,10 +3,10 @@
  * Hunter Poole 04-05-2026
  */
 
-#include "Kernel.h"
-#include "Sched.h"
-#include "Sema.h"
-#include "Uthread.h"
+#include "Kernel.h" // Singleton Monitor. Orchestrates all other Ultima classes.
+#include "Sched.h"  // The Scheduler.
+#include "Sema.h"   // The Semaphore.
+#include "Uthread.h" // Our Uthread - a pthread wrapper for the Kernel.
 #include <cstddef>
 #include <ncurses.h>
 #include <pthread.h>
@@ -16,17 +16,30 @@
 using namespace std;
 
 //--------------Forward Declarations----------------
+
+// Get or find The Kernel from Kernel.h
 Kernel *KernelPtr = Kernel::Get_Instance();
+
+// Get the scheduler's address from the Kernel.
 Scheduler *SchedulerPtr = KernelPtr->Get_Scheduler();
+
+// Ask the Kernel to make a Semaphore "Text".
 Semaphore *SemaphorePtr = KernelPtr->Create_Semaphore("Text");
+
+// Uthread wraps pthreads for use with Kernel. "Ultima Thread."
 uthread ut;
 
+// All windows asked for by methods.
 WINDOW *Task1_Win;
 WINDOW *Task2_Win;
 WINDOW *Task3_Win;
 WINDOW *Console_Win;
 WINDOW *Log_Win;
 
+/* struct TaskContext
+ *
+ * Holds a pointer to the Task's name and window.
+ */
 struct TaskContext {
   const char *name;
   WINDOW *win;
@@ -102,10 +115,29 @@ void display_help(WINDOW *Win) {
   write_window(Win, 7, 1, "q= Quit");
 }
 
+/* void *fake_work(void *args) {...}
+ *
+ * For Scenario 1.
+ * Each Task pretends to be doing meaningful work in its own window.
+ * When the task is done, it is fully done, and it yields for the next task.
+ *
+ * 1. Extract all arguments into a TaskContext struct *Context.
+ * 2. Make a buffer.
+ * 3. Do this five times:
+ *    - SemaphorePtr->down()
+ *    - Print that we are "running"
+ *    - SemaphorePtr->up();
+ *    - Sleep for 500ms
+ * 4. Lock Semaphore.
+ * 5. Print that we are yielding.
+ * 6. Sleep for 500ms.
+ * 7. Yield.
+ */
 void *fake_work(void *args) {
   TaskContext *Context = (TaskContext *)args;
   char buffer[256];
 
+  // Get semaphore, print, release it, and sleep.
   for (int i = 0; i < 5; i++) {
     SemaphorePtr->down();
     sprintf(buffer, " %s running\n", Context->name);
@@ -114,6 +146,7 @@ void *fake_work(void *args) {
     this_thread::sleep_for(chrono::milliseconds(500));
   }
 
+  // Prepare to yield. Kernel yields for us on return.
   SemaphorePtr->down();
   sprintf(buffer, " %s yielding\n", Context->name);
   write_window(Context->win, buffer);
@@ -123,7 +156,11 @@ void *fake_work(void *args) {
   return (NULL);
 }
 
-void *fake_work_with_sema() {
+/* void *fake_work_with_sema(void *args) {...}
+ *
+ * TODO: Rework this.
+ */
+void *fake_work_with_sema(void *args) {
   int current_task = SchedulerPtr->get_task_id();
   WINDOW *win;
   const char *name;
@@ -142,7 +179,21 @@ void *fake_work_with_sema() {
   return (NULL);
 }
 
-void *console(void *arg) {
+/* void *console(void *arg) {...}
+ *
+ * This method exists to put the console window in its own Uthread.
+ * That way, we can run the Ultima OS demo off of the Ultima OS structures.
+ *
+ * 1. Make a buffer.
+ * 2. Prepare for input.
+ * 3. Build all uthread tasks and TaskContext structs.
+ * 4. Loop input catch-and-respond until 'q' is entered.
+ *    - '1' for scenario 1.
+ *    - '2' for scenario 2.
+ *    - '3' for scenario 3.
+ * 5. Delete all TaskContext structs.
+ */
+void *console(void *args) {
   char buffer[256];
   int input = -1;
 
@@ -163,7 +214,7 @@ void *console(void *arg) {
     input = wgetch(Console_Win);
 
     switch (input) {
-    case '1': // Scenario 1
+    case '1': // Scenario 1 - each task all the way through.
       write_window(Log_Win, " Scenario 1: One Task At A Time\n");
 
       ut.create(&Task1, fake_work, T1);
@@ -172,7 +223,9 @@ void *console(void *arg) {
       SchedulerPtr->yield();
       write_window(Log_Win, " Scenario 1 Finished\n");
       SchedulerPtr->garbage_collect();
+
       break;
+    case '2': // Scenario 2 - tasks get blocked by Semaphore.
     default:
       break;
     case ERR:
@@ -187,6 +240,21 @@ void *console(void *arg) {
   return (NULL);
 }
 
+/* int main() {...}
+ *
+ * Main method for the Ultima demo.
+ *
+ * 1.  Initializes ncurses screen.
+ * 2.  Builds and prints to the heading window.
+ * 3.  Builds and prints to the log window.
+ * 4.  Builds and prints to the console window.
+ * 5.  Builds and prints all task windows.
+ * 6.  Set input flags and features.
+ * 7.  Create console_task and dispatch it to console().
+ * 8.  Start the scheduler.
+ * 9.  Wait for console_task to finish and join.
+ * 10. Kill the ncurses window.
+ */
 int main() {
   // Initializes the ncurses screen.
   initscr();
@@ -220,6 +288,7 @@ int main() {
   keypad(Console_Win, TRUE);
   mousemask(ALL_MOUSE_EVENTS, NULL);
 
+  // uthread_t is a thin wrapper over pthread_t for the Kernel.
   uthread_t console_task;
   ut.create(&console_task, console, NULL);
 
@@ -228,36 +297,5 @@ int main() {
   pthread_join(console_task, NULL);
   endwin();
 
-  /*
-   cbreak();
-   noecho();
-   nodelay(Console_Win, TRUE);
-   keypad(Console_Win, TRUE);
-   mousemask(ALL_MOUSE_EVENTS, NULL);
-
-   char buffer[256];
-   int input = -1;
-
-   while (input != 'q') {
-     input = wgetch(Console_Win);
-
-     switch (input) {
-     case '1': // Scenario 1.
-       write_window(Log_Win, " Scenario 1: One Task At A Time\n");
-
-       uthread_t Task1, Task2, Task3;
-       ut.create(&Task1, fake_work, NULL);
-       ut.create(&Task2, fake_work, NULL);
-       ut.create(&Task3, fake_work, NULL);
-       SchedulerPtr->start();
-
-       write_window(Log_Win, " Scenario 1 Finished\n");
-       break;
-     default:
-       break;
-     }
-   }
-
-   */
   return 0;
 }
