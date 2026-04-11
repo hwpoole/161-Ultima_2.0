@@ -102,53 +102,26 @@ void Scheduler::kill_task() {
  * another task. The scheduler will only switch tasks if the calling task
  * is BLOCKED or if it has exhausted its quantum.
  *
+ * 1. Set bool will_yield = false.
  * 1. Checks if the TCBList is empty.
  *    - If so, do nothing (return).
  * 2. Get the elapsed_time from the current task.
- * 3. Check if the current task is blocked or has exhausted its quantum.
- *    3a. If so, check if its state is RUNNING.
+ * 3. Check if the current task is blocked, dead, or has exhausted its quantum.
+ *    3a. Check if its state is RUNNING.
  *        3a-1. If so, set its state to READY.
- *    3b. If so, advance the TCBList and get the new TCB at the front of the
+ *        3a-2. Set will_yield = true.
+ *    3b. Advance the TCBList and get the new TCB at the front of the
  *        queue.
- *    3c. Then, move to the next READY task.
- *    3d. Then, update that task's state to RUNNING.
- * 4. Update the current process_table and current_task.
- *
-void Scheduler::yield() {
-  if (TCBList.is_empty()) {
-    return;
-  }
-
-  TCB *current = TCBList.get_front();
-  clock_t elapsed_time = clock() - current->start_time;
-
-  if (current->state == BLOCKED || elapsed_time >= current_quantum) {
-    if (current->state == RUNNING) {
-      current->state = READY;
-      TCBList.set_value(current);
-    }
-
-    TCBList.advance();
-    current = TCBList.get_front();
-
-    int counter = 0;
-    while (current->state != READY && counter < TCBList.size() - 1) {
-      TCBList.advance();
-      current = TCBList.get_front();
-      counter++;
-    }
-
-    if (current->state == READY && counter < TCBList.size() - 1) {
-      current->state = RUNNING;
-      current->start_time = clock();
-      TCBList.set_value(current);
-    } // Else... deadlock?
-  }
-
-  process_table = TCBList.get_front();
-  current_task = process_table->task_id;
-}
-*/
+ *    3c. Move to the next READY task, if any.
+ *        3c-1. If one is found, then will_yield = true.
+ * 4. Check book will_yield to see if we will yield.
+ *    4a. Set the current task's state to RUNNING.
+ *    4b. Start the clock.
+ *    4c. Signal that task's thread_cond.
+ *    4d. Put this thread into a pthread_cond_wait loop.
+ * 5. If we don't yield, then return to starting position.
+ *    - Nothing has changed.
+ */
 
 void Scheduler::yield() {
   bool will_yield = false;
@@ -161,23 +134,29 @@ void Scheduler::yield() {
   TCB *next;
   clock_t elapsed_time = clock() - current->start_time;
 
+  // Tasks that are BLOCKED, DEAD, or past their quantum should yield.
   if (current->state == BLOCKED || current->state == DEAD ||
       elapsed_time >= current_quantum) {
+
     if (current->state == RUNNING) {
       current->state = READY;
       TCBList.set_value(current);
       will_yield = true;
     }
 
+    // Move to next task.
     TCBList.advance();
     next = TCBList.get_front();
     int counter = 0;
+
+    // Find the next that that is READY.
     while (next->state != READY && counter < TCBList.size()) {
       TCBList.advance();
       next = TCBList.get_front();
       counter++;
     }
 
+    // If we found a task that is ready, we will yield.
     if (next->state == READY && counter < TCBList.size()) {
       will_yield = true;
     }
@@ -218,7 +197,7 @@ long Scheduler::get_quantum() { return (current_quantum); }
  * 3. Sets that node's TCB state accordingly.
  * 4. Reverts to the starting position, if different than current position.
  */
-void Scheduler::set_state(int task_ID, string STATE) {
+void Scheduler::set_state(int task_ID, STATE state) {
   TCB *current = TCBList.get_front();
   TCB *temp = TCBList.get_front();
 
@@ -230,7 +209,7 @@ void Scheduler::set_state(int task_ID, string STATE) {
   }
 
   if (temp->task_id == task_ID) {
-    temp->state = STATE;
+    temp->state = state;
     TCBList.set_value(temp);
   }
 
@@ -249,11 +228,11 @@ void Scheduler::set_state(int task_ID, string STATE) {
  * 4. Returns to starting position.
  * 5. Returns the found STATE.
  */
-string Scheduler::get_state(int task_ID) {
+STATE Scheduler::get_state(int task_ID) {
   TCB *current = TCBList.get_front();
   TCB *temp = TCBList.get_front();
 
-  string found_state;
+  STATE found_state;
   int counter = 0;
   while (temp->task_id != task_ID && counter < TCBList.size()) {
     TCBList.advance();
@@ -474,8 +453,8 @@ string Scheduler::dump() {
     TCB *current = TCBList.get_front();
     clock_t elapsed_time = clock() - current->start_time;
     char buffer[256];
-    sprintf(buffer, " %6d\t%8d\t%s\n", current->task_id, (int)elapsed_time,
-            current->state.c_str());
+    sprintf(buffer, " %6d\t%8d\t%d\n", current->task_id, (int)elapsed_time,
+            current->state);
     ss << buffer;
     TCBList.advance();
   }
