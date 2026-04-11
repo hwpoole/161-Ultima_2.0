@@ -48,7 +48,6 @@ Semaphore::~Semaphore() {}
  *    - Call the scheduler to yield.
  */
 void Semaphore::down() {
-  pthread_mutex_lock(&Kernel::CPULocker);
   int this_task = scheduler->get_task_id();
 
   if (sema_value > 0) {
@@ -58,7 +57,6 @@ void Semaphore::down() {
     scheduler->set_state(this_task, BLOCKED);
     scheduler->yield();
   }
-  pthread_mutex_unlock(&Kernel::CPULocker);
 }
 
 /* void Semaphore::up() {...}
@@ -84,7 +82,6 @@ void Semaphore::down() {
  *    - Increment sema_value++
  */
 void Semaphore::up() {
-  pthread_mutex_lock(&Kernel::CPULocker);
   if (!sema_queue.empty()) {
     int next_task = sema_queue.front();
     sema_queue.pop();
@@ -92,7 +89,6 @@ void Semaphore::up() {
   } else {
     sema_value++;
   }
-  pthread_mutex_unlock(&Kernel::CPULocker);
 }
 
 /* string Semaphore::dump() {...}

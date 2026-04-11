@@ -57,7 +57,6 @@ private:
   int sema_value = 1;
   queue<int> sema_queue;
   static Scheduler *scheduler;
-  mutex SemLocker;
 
 public:
   Semaphore(const char *Name);
