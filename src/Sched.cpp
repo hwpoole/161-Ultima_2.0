@@ -404,6 +404,7 @@ void Scheduler::start() {
     current->start_time = clock();
     current->state = RUNNING;
     current_task = current->task_id;
+    pthread_cond_signal(&current->thread_cond);
   }
 }
 
