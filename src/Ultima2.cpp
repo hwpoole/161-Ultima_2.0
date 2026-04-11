@@ -3,8 +3,11 @@
  * Hunter Poole 04-05-2026
  */
 
+#include "Kernel.h"
 #include "Sched.h"
 #include "Sema.h"
+#include "Uthread.h"
+#include <cstddef>
 #include <ncurses.h>
 #include <pthread.h>
 #include <thread>
@@ -13,18 +16,21 @@
 using namespace std;
 
 //--------------Forward Declarations----------------
-Scheduler *scheduler = new Scheduler();
-Semaphore *semaphore = new Semaphore("Text");
-
-/*
-int Task1 = scheduler->create_task();
-int Task2 = scheduler->create_task();
-int Task3 = scheduler->create_task();
-*/
+Kernel *KernelPtr = Kernel::Get_Instance();
+Scheduler *SchedulerPtr = KernelPtr->Get_Scheduler();
+Semaphore *SemaphorePtr = KernelPtr->Create_Semaphore("Text");
+uthread ut;
 
 WINDOW *Task1_Win;
 WINDOW *Task2_Win;
 WINDOW *Task3_Win;
+WINDOW *Console_Win;
+WINDOW *Log_Win;
+
+struct TaskContext {
+  const char *name;
+  WINDOW *win;
+};
 
 /* WINDOW *create_window(int height, int width, int starty, int startx) {...}
  *
@@ -97,55 +103,37 @@ void display_help(WINDOW *Win) {
 }
 
 void *fake_work(void *args) {
-  int task = *(int *)args;
-  const char *name;
-  WINDOW *win;
+  TaskContext *Context = (TaskContext *)args;
   char buffer[256];
 
-  switch (task) {
-  case 0:
-    name = "Task 1";
-    win = Task1_Win;
-    break;
-  case 1:
-    name = "Task 2";
-    win = Task2_Win;
-    break;
-  case 2:
-    name = "Task 3";
-    win = Task3_Win;
-    break;
-  default:
-    break;
-  }
-
   for (int i = 0; i < 5; i++) {
-    semaphore->down();
-    sprintf(buffer, " %s running\n", name);
-    write_window(win, buffer);
+    SemaphorePtr->down();
+    sprintf(buffer, " %s running\n", Context->name);
+    write_window(Context->win, buffer);
+    SemaphorePtr->up();
     this_thread::sleep_for(chrono::milliseconds(500));
   }
 
-  sprintf(buffer, " %s yielding\n", name);
-  write_window(win, buffer);
+  SemaphorePtr->down();
+  sprintf(buffer, " %s yielding\n", Context->name);
+  write_window(Context->win, buffer);
   this_thread::sleep_for(chrono::milliseconds(500));
-  semaphore->up();
-  scheduler->yield();
+  SemaphorePtr->up();
 
   return (NULL);
 }
 
 void *fake_work_with_sema() {
-  int current_task = scheduler->get_task_id();
+  int current_task = SchedulerPtr->get_task_id();
   WINDOW *win;
   const char *name;
   char buffer[256];
 
   sprintf(buffer, " %s wants Sema\n", name);
   write_window(win, buffer);
-  semaphore->down();
+  SemaphorePtr->down();
 
-  if (scheduler->get_state(current_task) == BLOCKED) {
+  if (SchedulerPtr->get_state(current_task) == BLOCKED) {
     sprintf(buffer, " %s was blocked\n", name);
     write_window(win, buffer);
     this_thread::sleep_for(chrono::milliseconds(500));
@@ -154,24 +142,52 @@ void *fake_work_with_sema() {
   return (NULL);
 }
 
+void *console(void *arg) {
+  char buffer[256];
+  int input = -1;
+
+  uthread_t Task1, Task2, Task3;
+  TaskContext *T1 = new TaskContext;
+  T1->name = "Task1";
+  T1->win = Task1_Win;
+
+  TaskContext *T2 = new TaskContext;
+  T2->name = "Task2";
+  T2->win = Task2_Win;
+
+  TaskContext *T3 = new TaskContext;
+  T3->name = "Task3";
+  T3->win = Task3_Win;
+
+  while (input != 'q') {
+    input = wgetch(Console_Win);
+
+    switch (input) {
+    case '1': // Scenario 1
+      write_window(Log_Win, " Scenario 1: One Task At A Time\n");
+
+      ut.create(&Task1, fake_work, T1);
+      ut.create(&Task2, fake_work, T2);
+      ut.create(&Task3, fake_work, T3);
+      SchedulerPtr->yield();
+      write_window(Log_Win, " Scenario 1 Finished\n");
+      SchedulerPtr->garbage_collect();
+      break;
+    default:
+      break;
+    case ERR:
+      break;
+    }
+  }
+
+  delete T1;
+  delete T2;
+  delete T3;
+
+  return (NULL);
+}
+
 int main() {
-  // Register scheduler with semaphore and set quantum LOW to force yields.
-  Semaphore::set_scheduler(scheduler);
-  scheduler->set_quantum(1);
-
-  // Create all tasks with the scheduler.
-  int Task1 = scheduler->create_task();
-  int Task2 = scheduler->create_task();
-  int Task3 = scheduler->create_task();
-
-  // Create all pthread_t
-  pthread_t Thread1, Thread2, Thread3;
-
-  // Register each Thread with its Task.
-  scheduler->set_pthread_t(Task1, Thread1);
-  scheduler->set_pthread_t(Task2, Thread2);
-  scheduler->set_pthread_t(Task3, Thread3);
-
   // Initializes the ncurses screen.
   initscr();
 
@@ -182,10 +198,10 @@ int main() {
   mvwprintw(Heading_Win, 5, 2, "Press 'q' or Crtl-C to exit the program.");
   wrefresh(Heading_Win);
 
-  WINDOW *Log_Win = create_window(10, 60, 30, 2);
+  Log_Win = create_window(10, 60, 30, 2);
   write_window(Log_Win, 1, 5, "...Log Window...\n");
 
-  WINDOW *Console_Win = create_window(10, 20, 30, 62);
+  Console_Win = create_window(10, 20, 30, 62);
   write_window(Console_Win, 1, 1, "...Console...\n");
   write_window(Console_Win, 2, 1, "161-Ultima 2.0 #\n");
 
@@ -204,31 +220,44 @@ int main() {
   keypad(Console_Win, TRUE);
   mousemask(ALL_MOUSE_EVENTS, NULL);
 
-  char buffer[256];
-  int input = -1;
+  uthread_t console_task;
+  ut.create(&console_task, console, NULL);
 
-  while (input != 'q') {
-    input = wgetch(Console_Win);
+  SchedulerPtr->start();
 
-    switch (input) {
-    case '1': // Scenario 1.
-      write_window(Log_Win, " Scenario 1: One Task At A Time\n");
+  pthread_join(console_task, NULL);
+  endwin();
 
-      scheduler->start();
-      pthread_create(&Thread1, NULL, fake_work, &Task1);
-      pthread_create(&Thread2, NULL, fake_work, &Task2);
-      pthread_create(&Thread3, NULL, fake_work, &Task3);
+  /*
+   cbreak();
+   noecho();
+   nodelay(Console_Win, TRUE);
+   keypad(Console_Win, TRUE);
+   mousemask(ALL_MOUSE_EVENTS, NULL);
 
-      pthread_join(Thread1, NULL);
-      pthread_join(Thread2, NULL);
-      pthread_join(Thread3, NULL);
+   char buffer[256];
+   int input = -1;
 
-      write_window(Log_Win, " Scenario 1 Finished\n");
-      break;
-    default:
-      break;
-    }
-  }
+   while (input != 'q') {
+     input = wgetch(Console_Win);
 
+     switch (input) {
+     case '1': // Scenario 1.
+       write_window(Log_Win, " Scenario 1: One Task At A Time\n");
+
+       uthread_t Task1, Task2, Task3;
+       ut.create(&Task1, fake_work, NULL);
+       ut.create(&Task2, fake_work, NULL);
+       ut.create(&Task3, fake_work, NULL);
+       SchedulerPtr->start();
+
+       write_window(Log_Win, " Scenario 1 Finished\n");
+       break;
+     default:
+       break;
+     }
+   }
+
+   */
   return 0;
 }
