@@ -396,7 +396,8 @@ pthread_cond_t *Scheduler::get_cond_t(int task_ID) {
  * 2. Get the TCB of the task at the front of the queue.
  * 3. Start the clock on that task.
  * 4. Set that task's state to RUNNING.
- * 5. If the TCBList is empty, do nothing.
+ * 5. Signal the thread_cond.
+ * 6. If the TCBList is empty, do nothing.
  */
 void Scheduler::start() {
   if (!TCBList.is_empty()) {
