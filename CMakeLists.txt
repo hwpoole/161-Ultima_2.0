@@ -53,6 +53,8 @@ add_executable(
   src/Ultima2.cpp
   src/Sched.cpp
   src/Sema.cpp
+  src/Kernel.cpp
+  src/Uthread.cpp
 )
 
 target_include_directories(
