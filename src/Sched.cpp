@@ -138,6 +138,7 @@ void Scheduler::yield() {
   if (current->state == BLOCKED || current->state == DEAD ||
       elapsed_time >= current_quantum) {
 
+    // Current is running, make it ready.
     if (current->state == RUNNING) {
       current->state = READY;
       TCBList.set_value(current);
@@ -168,7 +169,7 @@ void Scheduler::yield() {
     TCBList.set_value(next);
     pthread_cond_signal(&next->thread_cond);
 
-    while (current->state != RUNNING) {
+    while (current->state == READY || current->state == BLOCKED) {
       pthread_cond_wait(&current->thread_cond, &Kernel::CPULocker);
     }
   } else {
