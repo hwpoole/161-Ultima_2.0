@@ -15,6 +15,8 @@
 
 #include <cstddef>
 #include <iostream>
+#include <mutex>
+#include <pthread.h>
 
 using namespace std;
 
@@ -100,6 +102,7 @@ private:
   Node<T> *tail;
   bool empty;
   int length;
+  mutex ListLocker;
 
 public:
   /* CircularLinkedList() {...}
@@ -111,6 +114,7 @@ public:
    * Tail to null.
    * empty = true.
    * length = 0.
+   * Initialize ListLocker;
    */
   CircularLinkedList() {
     head = nullptr;
@@ -126,6 +130,7 @@ public:
    * Removes nodes from the front until the list is empty.
    */
   ~CircularLinkedList() {
+    lock_guard<std::mutex> lock(ListLocker);
     while (!empty) {
       remove_front();
     }
@@ -136,18 +141,20 @@ public:
    * Inserts a node at the front of the CLL.
    *
    * 1. Creates a pointer to NewNode with value of T value.
-   * 2. Checks if the list is empty.
+   * 2. Locks the ListLocker.
+   * 3. Checks if the list is empty.
    *    2a. If so, head & tail = NewNode.
    *    2b. Then, empty = false.
-   * 3. Else...
+   * 4. Else...
    *    - Point NewNode to head.
    *    - Point tail to NewNode.
    *    - Update head to NewNode.
-   * 4. Increment length.
+   * 5. Increment length.
    */
   void insert_front(T value) {
     Node<T> *NewNode = new Node<T>(value);
 
+    lock_guard<std::mutex> lock(ListLocker);
     if (empty) {
       head = NewNode;
       tail = NewNode;
@@ -159,7 +166,6 @@ public:
       tail->next = NewNode;
       head = NewNode;
     }
-
     length++;
   }
 
@@ -170,17 +176,19 @@ public:
    * 1. Checks if position is <= 1 or if CLL is empty.
    *    1a. If so, calls insert_front with the provided value.
    * 2. Else...
+   *    - Locks ListLocker.
    *    - Creates NewNode with value.
    *    - Creates temp node at the head.
    *    - Iterates through the list until it finds the position.
    *    - Updates NewNode to point to temp's next node.
    *    - Updates temp to point to NewNode.
-   * 3. Increment length.
+   *    - Increment length.
    */
   void insert_at(T value, int position) {
     if (position <= 1 || empty) {
       insert_front(value);
     } else {
+      lock_guard<std::mutex> lock(ListLocker);
       Node<T> *NewNode = new Node<T>(value);
       Node<T> *temp = head;
 
@@ -190,9 +198,8 @@ public:
 
       NewNode->next = temp->next;
       temp->next = NewNode;
+      length++;
     }
-
-    length++;
   }
 
   /* void insert_end(T value) {...}
@@ -202,24 +209,25 @@ public:
    * 1. Checks if the list is empty.
    *    - If so, call insert_front(value).
    * 2. Else...
+   *    - Locks ListLocker.
    *    - Make a NewNode.
    *    - Set NewNode's next to be the head.
    *    - Set tail's next to be NewNode.
    *    - Set tail = NewNode.
-   * 3. Increment length.
+   *    - Increment length.
    */
   void insert_end(T value) {
     if (empty) {
       insert_front(value);
     } else {
+      lock_guard<std::mutex> lock(ListLocker);
       Node<T> *NewNode = new Node<T>(value);
 
       NewNode->next = head;
       tail->next = NewNode;
       tail = NewNode;
+      length++;
     }
-
-    length++;
   }
 
   /* void remove_front() {...}
@@ -228,20 +236,22 @@ public:
    *
    * 1. Checks if the list is empty.
    *    - If so, do nothing.
-   * 2. Else, if the list has only one node...
+   * 2. Locks ListLocker.
+   * 3. Else, if the list has only one node...
    *    - Dereference that node.
    *    - Set empty = true.
-   * 3. Else,
+   * 4. Else,
    *    - Point tail to head's next.
    *    - Point head to head's next.
-   * 4. Delete the old head.
-   * 5. Decrement length.
+   * 5. Delete the old head.
+   * 6. Decrement length.
    */
   void remove_front() {
     if (empty) {
       return;
     }
 
+    lock_guard<std::mutex> lock(ListLocker);
     Node<T> *OldHead = head;
 
     if (head == tail) {
@@ -263,23 +273,25 @@ public:
    *
    * 1. Checks if the list is empty.
    *    - If so, do nothing.
-   * 2. Else, if the list has only one node...
+   * 2. Locks ListLocker.
+   * 3. Else, if the list has only one node...
    *    - Dereference that node.
    *    - Set empty = true.
-   * 3. Else,
+   * 4. Else,
    *    - Make two Node pointers.
    *    - Advance both. One to tail and one previous the tail.
    *    - Point the NewTail to the head.
    *    - Make the old tail's reference to the head null.
    *    - Set tail = NewTail.
-   * 4. Delete the old tail.
-   * 5. Decrement length.
+   * 5. Delete the old tail.
+   * 6. Decrement length.
    */
   void remove_end() {
     if (empty) {
       return;
     }
 
+    lock_guard<std::mutex> lock(ListLocker);
     Node<T> *OldTail = tail;
 
     if (head == tail) {
@@ -308,13 +320,19 @@ public:
    *
    * Returns the empty bool.
    */
-  bool is_empty() { return (empty); }
+  bool is_empty() {
+    lock_guard<std::mutex> lock(ListLocker);
+    return (empty);
+  }
 
   /* int size() {...}
    *
    * Returns the int length.
    */
-  int size() { return length; }
+  int size() {
+    lock_guard<std::mutex> lock(ListLocker);
+    return length;
+  }
 
   /* void advance() {...}
    *
@@ -324,6 +342,7 @@ public:
    * 1. Checks if the list is empty.
    *    - If so, return (do nothing).
    * 2. Else,
+   *    - Locks ListLocker.
    *    - tail = head
    *    - head->next = tail
    */
@@ -332,6 +351,7 @@ public:
       return;
     }
 
+    lock_guard<std::mutex> lock(ListLocker);
     tail = head;
     head = head->next;
   }
@@ -340,7 +360,10 @@ public:
    *
    * Returns the head's data.
    */
-  T get_front() { return (head->data); }
+  T get_front() {
+    lock_guard<std::mutex> lock(ListLocker);
+    return (head->data);
+  }
 
   /* int get_pos(T key) {...}
    *
@@ -348,12 +371,13 @@ public:
    * key, if any.
    *
    * 1. Checks if the list is empty.
-   *    - If so, return 0.
-   * 2. Checks if the head's data matches the key.
+   *    - If so, return -1.
+   * 2. Locks ListLocker.
+   * 3. Checks if the head's data matches the key.
    *    - If so, returns 1.
-   * 3. Checks if the tail's data matches the key.
+   * 4. Checks if the tail's data matches the key.
    *    - If so, returns length.
-   * 4. Else...
+   * 5. Else...
    *    - Make a temp node.
    *    - Iterate through the list until its found the key or touched every
    *      node.
@@ -365,6 +389,7 @@ public:
       return -1;
     }
 
+    lock_guard<std::mutex> lock(ListLocker);
     if (head->data == key) {
       return (0);
     } else if (tail->data == key) {
@@ -390,13 +415,19 @@ public:
    *
    * Returns the data of the node after the head.
    */
-  T get_next() { return (head->next->data); }
+  T get_next() {
+    lock_guard<std::mutex> lock(ListLocker);
+    return (head->next->data);
+  }
 
   /* T get_end() {...}
    *
    * Returns the data of the tail node.
    */
-  T get_end() { return (tail->data); }
+  T get_end() {
+    lock_guard<std::mutex> lock(ListLocker);
+    return (tail->data);
+  }
 
   /* void move_to_key(T key) {...}
    *
@@ -405,7 +436,8 @@ public:
    *
    * 1. Checks if the list is empty.
    *    - If so, return.
-   * 2. While head's data does not match key...
+   * 2. Locks ListLocker.
+   * 3. While head's data does not match key...
    *    - Advance tail to head and head to head's.
    *    - Try this for every node in the list.
    */
@@ -414,6 +446,7 @@ public:
       return;
     }
 
+    lock_guard<std::mutex> lock(ListLocker);
     int iterations = 0;
     while (head->data != key && iterations < length) {
       tail = head;
@@ -426,7 +459,19 @@ public:
    *
    * Sets the head's data portion to the provided value.
    */
-  void set_value(T value) { head->data = value; }
+  void set_value(T value) {
+    lock_guard<std::mutex> lock(ListLocker);
+    head->data = value;
+  }
+
+  /* void set_nextvalue(T value) {...}
+   *
+   * Sets the data portion of the node after the head.
+   */
+  void set_nextvalue(T value) {
+    lock_guard<std::mutex> lock(ListLocker);
+    head->next->data = value;
+  }
 
   /* void dump() {...}
    *
@@ -435,6 +480,7 @@ public:
    * 1. Checks if the list is empty.
    *    - If so, print that.
    * 2. Else,
+   *    - Locks ListLocker.
    *    - Iterates through the list.
    *    - Prints data from every node.
    *    - Stops when it hits the head again.
@@ -443,6 +489,7 @@ public:
     if (empty) {
       cout << "List is empty" << endl;
     } else {
+      lock_guard<std::mutex> lock(ListLocker);
       Node<T> *temp = head;
       temp = head;
 

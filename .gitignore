@@ -77,6 +77,7 @@ CMakeUserPresets.json
 
 # CMake
 cmake-build-*/
+build/
 */build/
 */build/*
 Phases/Phase_1/build/

@@ -2,7 +2,7 @@
  * Ultima 2.0
  *
  * This Scheduler class header file shows the private and public resources of
- * the Scheduler class and its struct, TCB.
+ * the Scheduler class, enum STATE and struct TCB.
  *
  * Of note to the public, who wish to use this class:
  *  1.  Scheduler()
@@ -11,6 +11,7 @@
  *      - A destructor.
  *  3.  int create_task()
  *      - Creates a new task at the end of the queue.
+ *      - Returns that task's task_ID.
  *  4.  void kill_task()
  *      - Kills the current task and calls garbage_collect().
  *  5.  void yield()
@@ -28,11 +29,17 @@
  *      - A getter for the state of a task by task_ID.
  *  10. int get_task_id()
  *      - A getter for the current task's task_id.
- *  11. void start()
+ *  10. void set_pthread_t()
+ *      - A setter for a task's pthread_t in its TCB.
+ *  11. pthread_t get_pthread_t()
+ *      - A getter method for a task's pthread_t.
+ *  12. pthread_cond_t *get_cond_t()
+ *      - A getter method for a task's pthread_cond_t.
+ *  13. void start()
  *      - Starts the scheduler and runs the first task, if tasks are present.
- *  12. void garbage_collect()
+ *  14. void garbage_collect()
  *      - Collects and deletes all TCBs whole state is DEAD.
- *  13. void dump()
+ *  15. void dump()
  *      - A "pretty print" method for the current scheduler state.
  *
  * Of note on the private resources:
@@ -54,21 +61,48 @@
 #pragma once
 
 #include "CircularLinkedList.h"
+#include <pthread.h>
 #include <string>
 
 using namespace std;
 
-// Allowable states for tasks.
-const string READY = "READY";
-const string RUNNING = "RUNNING";
-const string BLOCKED = "BLOCKED";
-const string DEAD = "DEAD";
+/* enum STATE
+ *
+ * The allowable states for a task are:
+ *
+ * 1. READY
+ *    - The task may run, but is not.
+ * 2. RUNNING
+ *    - The task is currently running.
+ * 3. BLOCKED
+ *    - The task may not run.
+ * 4. DEAD
+ *    - The task is DEAD and needs cleaned up.
+ */
+enum STATE { READY, RUNNING, BLOCKED, DEAD };
 
-// Task Control Block.
+/* struct TCB
+ *
+ * The Task Control Block.
+ * Stores important information for each task.
+ *
+ * 1. int task_id
+ *    - The task's task_id, set by the Scheduler.
+ * 2. STATE state.
+ *    - The current state of the task.
+ * 3. clock_t start_time.
+ *    - The task's start time for when it started running.
+ * 4. pthread_t thread_id.
+ *    - The pthread_t associated with the task.
+ * 5. pthread_cond_t thread_cond.
+ *    - The signalling condition on which a task will wait.
+ */
 struct TCB {
   int task_id;
-  string state;
+  STATE state;
   clock_t start_time;
+  pthread_t thread_id;
+  pthread_cond_t thread_cond;
 };
 
 class Scheduler {
@@ -94,11 +128,17 @@ public:
 
   long get_quantum();
 
-  void set_state(int task_ID, string state);
+  void set_state(int task_ID, STATE state);
 
-  string get_state(int task_ID);
+  STATE get_state(int task_ID);
 
   int get_task_id();
+
+  void set_pthread_t(int task_ID, pthread_t thread_ID);
+
+  pthread_t get_pthread_t(int task_ID);
+
+  pthread_cond_t *get_cond_t(int task_ID);
 
   void start();
 

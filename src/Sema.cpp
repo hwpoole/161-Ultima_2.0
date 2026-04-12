@@ -10,7 +10,9 @@
  */
 
 #include "Sema.h"
+#include "Kernel.h"
 #include <iostream>
+#include <pthread.h>
 #include <queue>
 #include <sstream>
 
