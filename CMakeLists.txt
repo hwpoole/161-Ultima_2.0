@@ -55,6 +55,7 @@ add_executable(
   src/Sema.cpp
   src/Kernel.cpp
   src/Uthread.cpp
+  src/Pipe.cpp
 )
 
 target_include_directories(
