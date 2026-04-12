@@ -63,7 +63,7 @@ public:
   bool is_empty();
 
   // Prints current state of the pipe (for debugging/demo)
-  void dump();
+  string dump();
 };
 
 #endif
