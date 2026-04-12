@@ -104,27 +104,40 @@ int Pipe::read() {
 // is_empty()
 bool Pipe::is_empty() { return (count == 0 ? true : false); }
 
+// reset()
+// Return a Pipe to default settings
+void Pipe::reset(int id) {
+  pfd = id; // Assign unique pipe ID
+
+  read_ptr = 0;  // Reading starts at index 0
+  write_ptr = 0; // Writing starts at index 0
+  count = 0;     // Buffer is empty initially
+
+  writer_task = -1; // No writer assigned yet
+  reader_task = -1; // No reader assigned yet
+}
+
 // dump()
 //  Return pipe state as a string
 string Pipe::dump() {
   stringstream ss;
 
-  ss << "\n===== PIPE STATE =====\n";
-  ss << "Pipe ID: " << pfd << "\n";
+  ss << "\n ===== PIPE STATE ===== \n";
+  ss << " Pipe ID: " << pfd << "\n";
 
-  ss << "Buffer: ";
+  ss << " Buffer: ";
   for (int i = 0; i < count; i++) {
     int index = (read_ptr + i) % PIPE_SIZE;
     ss << buffer[index] << " ";
   }
   ss << "\n";
 
-  ss << "Read Ptr: " << read_ptr << "\n";
-  ss << "Write Ptr: " << write_ptr << "\n";
-  ss << "Count: " << count << "\n";
-  ss << "Writer Task: " << writer_task << "\n";
-  ss << "Reader Task: " << reader_task << "\n";
-  ss << "======================\n";
+  ss << " Read Ptr: " << read_ptr << "\n";
+  ss << " Write Ptr: " << write_ptr << "\n";
+  ss << " Count: " << count << "\n";
+  ss << " Writer Task: " << writer_task << "\n";
+  ss << " Reader Task: " << reader_task << "\n";
+  ss << " ====================== ";
 
   return ss.str();
 }
