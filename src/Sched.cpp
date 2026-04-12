@@ -448,14 +448,34 @@ string Scheduler::dump() {
   stringstream ss;
   ss << " ---------- PROCESS TABLE ----------" << endl;
   ss << " Quantum = " << current_quantum << endl;
-  ss << " Task-ID\t Elapsed Time\tState" << endl;
+  ss << " Task-ID     Elapsed Time     State" << endl;
+
+  TCB *current;
+  clock_t elapsed_time = 0;
+  char buffer[256];
+  string state;
 
   for (int i = 0; i < TCBList.size(); i++) {
-    TCB *current = TCBList.get_front();
-    clock_t elapsed_time = clock() - current->start_time;
-    char buffer[256];
-    sprintf(buffer, " %6d\t%8d\t%d\n", current->task_id, (int)elapsed_time,
-            current->state);
+    current = TCBList.get_front();
+    elapsed_time = clock() - current->start_time;
+
+    switch (current->state) {
+    case READY:
+      state = "READY";
+      break;
+    case RUNNING:
+      state = "RUNNING";
+      break;
+    case BLOCKED:
+      state = "BLOCKED";
+      break;
+    case DEAD:
+      state = "DEAD";
+      break;
+    }
+
+    sprintf(buffer, " %2d\t%14d\t%12s\n", current->task_id, (int)elapsed_time,
+            state.c_str());
     ss << buffer;
     TCBList.advance();
   }
