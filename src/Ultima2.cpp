@@ -1,6 +1,61 @@
 /* 161-Ultima 2.0 Phase 2 Demo file.
  *
- * Hunter Poole 04-05-2026
+ * This Demo file feeatures three scenarios of consequence, for three features
+ * of consequence in the Ultima 2.0 OS:
+ *
+ * 1. Strict Round Robin Scheduling.
+ *
+ * Three uthreads are spawned and dispatched to complete some "fake work." In a
+ * cooperative system, they will not be interrupted until they make a call to
+ * yield().
+ *
+ * 2. Semaphore and its queue.
+ *
+ * Three utrheads are spawned and dispatched to complete some "fake work"
+ * requiring a Semaphore. Each tasks that can't get the Semaphore will be added
+ * to a queue, and will gain access to the guarded resource strictly in the
+ * order they were added to the queue.
+ *
+ * 3. Producer-Consumer problem with a Pipe.
+ *
+ * Two uthreads are spawned and dispatched - one as a producer and one as a
+ * consumer. Each tries to get access to a Pipe, and locks a Semaphore to
+ * prevent the other from messing with the Pipe while they are working on it.
+ * Random chars are passed between uthreads.
+ *
+ *
+ * There are interesting features as follows:
+ *
+ * 1. A Scheduler.
+ *
+ * Strict round robin scheduler, uses a "clockhand" algorithm for scheduling.
+ * As such, you will see the entire Process Table "rotate" to switch which task
+ * is RUNNING. Only one task may run at a time.
+ *
+ * 2. A Semaphore.
+ *
+ * A binary Semaphore, who puts tasks into a queue when they are unable to get
+ * access to the resource. Enforces strict FIFO access to the guarded resource.
+ *
+ * 3. A Pipe.
+ *
+ * A Pipe, who serves to transport chars between processes. Created with a
+ * unique ID.
+ *
+ * 4. A Kernel.
+ *
+ * A pseudo-kernel for the purposes of orchestrating the Ultima 2.0 OS. It is a
+ * Singleton Monitor. Ideally, this makes tracking and organizing access to
+ * resources easier for the user-space programmer of the Ultima 2.0 OS.
+ *
+ * 5. Uthread.
+ *
+ * Uthread is a thin wrapper over pthread. It's just here to make pthreads
+ * register themselves with the Kernel. Still spawns pthreads... we just call
+ * them something different.
+ *
+ * Hunter Poole
+ * 04-12-2026
  */
 
 #include "Kernel.h" // Singleton Monitor. Orchestrates all other Ultima classes.
@@ -31,10 +86,14 @@ Semaphore *SemaphorePtr = KernelPtr->Create_Semaphore("Something special!");
 // Uthread wraps pthreads for use with Kernel. "Ultima Thread."
 uthread ut;
 
+// Pointer to a yet undefined Pipe.
+Pipe *PipePtr;
+
 // All windows asked for by methods.
 WINDOW *Task1_Win;
 WINDOW *Task2_Win;
 WINDOW *Task3_Win;
+WINDOW *Heading_Win;
 WINDOW *Console_Win;
 WINDOW *Log_Win;
 WINDOW *Sched_Win;
@@ -52,6 +111,8 @@ struct TaskContext {
   const char *name;
   WINDOW *win;
 };
+
+//-----------------Window helpers--------------------------------------
 
 /* WINDOW *create_window(int height, int width, int starty, int startx) {...}
  *
@@ -138,6 +199,34 @@ void display_help(WINDOW *Win) {
   write_window(Win, 7, 1, "q= Quit");
 }
 
+/* void write_defaults() {...}
+ *
+ * A method to clear and re-write all windows that are written to.
+ *
+ * 1. Clear every Window.
+ * 2. Write back it's default text.
+ */
+void write_defaults() {
+  wclear(Log_Win);
+  wclear(Console_Win);
+  wclear(Task1_Win);
+  wclear(Task2_Win);
+  wclear(Task3_Win);
+  wclear(Sched_Win);
+  wclear(Sema_Win);
+  wclear(Pipe_Win);
+
+  write_window(Log_Win, 1, 5, "...Log Window...\n");
+  write_window(Console_Win, 1, 1, "...Console...\n");
+  write_window(Console_Win, 2, 1, "161-Ultima 2.0 #\n");
+  write_window(Task1_Win, 6, 1, "Thread 1\n");
+  write_window(Task2_Win, 6, 1, "Thread 2\n");
+  write_window(Task3_Win, 6, 1, "Thread 3\n");
+  write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
+  write_window(Sema_Win, 1, 3, "...Semaphore Window...\n");
+  write_window(Pipe_Win, 1, 3, "...Pipe Window...\n");
+}
+
 /* void Tick() {...}
  *
  * Slows everything down to "ticks."
@@ -148,14 +237,24 @@ void display_help(WINDOW *Win) {
  */
 void Tick() {
   // write to all windows here.
-  write_window_fast(Sched_Win, SchedulerPtr->dump().c_str());
-  write_window_fast(Sema_Win, SemaphorePtr->dump().c_str());
-  //  write_window_fast(Pipe_Win, PipePtr->dump().c_str());
+  if (SchedulerPtr != nullptr) {
+    write_window_fast(Sched_Win, SchedulerPtr->dump().c_str());
+  }
+
+  if (SemaphorePtr != nullptr) {
+    write_window_fast(Sema_Win, SemaphorePtr->dump().c_str());
+  }
+
+  if (PipePtr != nullptr) {
+    write_window_fast(Pipe_Win, PipePtr->dump().c_str());
+  }
 
   pthread_mutex_unlock(&Kernel::CPULocker);
   this_thread::sleep_for(chrono::milliseconds(500));
   pthread_mutex_lock(&Kernel::CPULocker);
 }
+
+//----------------Scenario Methods----------------------------------------
 
 /* void *fake_work(void *args) {...}
  *
@@ -233,10 +332,22 @@ void *fake_work_with_sema(void *args) {
   return (NULL);
 }
 
-// Special Condition for Scenario 3 - not tracked by Kernel.
-// Declared and Initialized specifically for the producer-consumer problem.
-pthread_cond_t Pipe_cond = PTHREAD_COND_INITIALIZER;
-
+/* void *producer(void *args) {...}
+ *
+ * This is a producer for the producer-consumer problem.
+ * Features some odd yields for the sake of a demo.
+ *
+ * 1.  Extract args into TaskContext *Context.
+ * 2.  Get a buffer.
+ * 3.  Get a Pipe of ID = 1.
+ * 4.  Lock the Semaphore.
+ * 5.  Call yield (Consumer will yield from locked Semaphore).
+ * 6.  Close the read end of the Pipe.
+ * 7.  Open the write end of the Pipe for this task.
+ * 8.  Write 5 random chars to the pipe.
+ * 9.  Release Semaphore.
+ * 10. Yield.
+ */
 void *producer(void *args) {
   TaskContext *Context = (TaskContext *)args;
   char buffer[256];
@@ -245,49 +356,59 @@ void *producer(void *args) {
   write_window(Context->win, buffer);
   sprintf(buffer, " %s makes Pipe 1\n", Context->name);
   write_window(Context->win, buffer);
-  Pipe *PipePtr = KernelPtr->Get_Pipe(1);
+  PipePtr = KernelPtr->Get_Pipe(1);
 
-  if (PipePtr->open_for_write(SchedulerPtr->get_task_id())) {
-
-    for (int i = 0; i < 5; i++) {
-      sprintf(buffer, " %s locks Sema\n", Context->name);
-      write_window(Context->win, buffer);
-      SemaphorePtr->down();
-
-      sprintf(buffer, " %s closes Read\n", Context->name);
-      write_window(Context->win, buffer);
-      PipePtr->close_read();
-
-      sprintf(buffer, " %s opens Write\n", Context->name);
-      write_window(Context->win, buffer);
-      PipePtr->open_for_write(SchedulerPtr->get_task_id());
-
-      for (int j = 0; j < 5; j++) {
-        char rand_char = ('a' + rand() % 26);
-        sprintf(buffer, " %s writes '%c'\n", Context->name, rand_char);
-        write_window(Context->win, buffer);
-        PipePtr->write(rand_char);
-      }
-
-      sprintf(buffer, " %s releases Sema\n", Context->name);
-      write_window(Context->win, buffer);
-      SemaphorePtr->up();
-      // sprintf(buffer, " %s signals consumer\n", Context->name);
-      // write_window(Context->win, buffer);
-      sprintf(buffer, " %s yields\n", Context->name);
-      write_window(Context->win, buffer);
-
-      // pthread_cond_signal(&Pipe_cond);
-      SchedulerPtr->yield();
-    }
-  } else {
-    sprintf(buffer, " Couldn't write\n");
+  for (int i = 0; i < 5; i++) {
+    sprintf(buffer, " %s locks Sema\n", Context->name);
     write_window(Context->win, buffer);
+    SemaphorePtr->down();
+    SchedulerPtr->yield();
+
+    sprintf(buffer, " %s closes Read\n", Context->name);
+    write_window(Context->win, buffer);
+    PipePtr->close_read();
+
+    sprintf(buffer, " %s opens Write\n", Context->name);
+    write_window(Context->win, buffer);
+    PipePtr->open_for_write(SchedulerPtr->get_task_id());
+
+    for (int j = 0; j < 5; j++) {
+      char rand_char = ('a' + rand() % 26);
+      sprintf(buffer, " %s writes '%c'\n", Context->name, rand_char);
+      write_window(Context->win, buffer);
+      PipePtr->write(rand_char);
+    }
+
+    sprintf(buffer, " %s releases Sema\n", Context->name);
+    write_window(Context->win, buffer);
+    SemaphorePtr->up();
+
+    sprintf(buffer, " %s yields\n", Context->name);
+    write_window(Context->win, buffer);
+
+    SchedulerPtr->yield();
   }
 
   return (NULL);
 }
 
+/* void *consumer(void *args) {...}
+ *
+ * This is a consumer for the producer-consumer problem.
+ * Features some odd yields for the sake of a demo.
+ *
+ * 1.  Extract args into TaskContext *Context
+ * 2.  Get a buffer.
+ * 3.  Get a Pipe of ID = 1.
+ * 4.  Lock the Semaphore (will fail and yield).
+ * 5.  Close the write end of the Pipe.
+ * 6.  Open the read end of the Pipe.
+ * 7.  Read all chars in the Pipe.
+ * 8.  Release Semaphore.
+ * 9.  Yield.
+ * 10. Reset the Pipe for the next run
+ *     - LAST step in the Scenario.
+ */
 void *consumer(void *args) {
   TaskContext *Context = (TaskContext *)args;
   char buffer[256];
@@ -296,19 +417,15 @@ void *consumer(void *args) {
   write_window(Context->win, buffer);
   sprintf(buffer, " %s gets Pipe 1\n", Context->name);
   write_window(Context->win, buffer);
-  Pipe *PipePtr = KernelPtr->Get_Pipe(1);
+  PipePtr = KernelPtr->Get_Pipe(1);
 
   for (int i = 0; i < 5; i++) {
-
-    // sprintf(buffer, " %s waits for signal\n", Context->name);
-    // write_window(Context->win, buffer);
-    //  while (PipePtr->is_empty()) {
-    //  pthread_cond_wait(&Pipe_cond, &Kernel::CPULocker);
-    // }
-
-    sprintf(buffer, " %s locks Sema\n", Context->name);
+    sprintf(buffer, " %s wants Sema\n", Context->name);
     write_window(Context->win, buffer);
     SemaphorePtr->down();
+
+    sprintf(buffer, " %s gets Sema\n", Context->name);
+    write_window(Context->win, buffer);
 
     sprintf(buffer, " %s closes Write\n", Context->name);
     write_window(Context->win, buffer);
@@ -326,17 +443,18 @@ void *consumer(void *args) {
 
     sprintf(buffer, " %s releases Sema\n", Context->name);
     write_window(Context->win, buffer);
-    // sprintf(buffer, " %s signals producer\n", Context->name);
-    // write_window(Context->win, buffer);
+    SemaphorePtr->up();
+
     sprintf(buffer, " %s yields\n", Context->name);
     write_window(Context->win, buffer);
-
-    SemaphorePtr->up();
     SchedulerPtr->yield();
   }
 
+  PipePtr->reset(1);
   return (NULL);
 }
+
+//---------------Orchestration----------------------------------------
 
 /* void *console(void *arg) {...}
  *
@@ -350,6 +468,11 @@ void *consumer(void *args) {
  *    - '1' for scenario 1.
  *    - '2' for scenario 2.
  *    - '3' for scenario 3.
+ *    - 'p' for Pause.
+ *        - 'r' for Resume.
+ *    - 'h' for Help.
+ *    - 'c' for Clear.
+ *    - 'q' for Quit.
  * 5. Delete all TaskContext structs.
  */
 void *console(void *args) {
@@ -392,7 +515,7 @@ void *console(void *args) {
       ut.create(&Task2, fake_work_with_sema, T2);
       ut.create(&Task3, fake_work_with_sema, T3);
 
-      for (int i = 0; i < 6; i++) {
+      for (int i = 0; i < 4; i++) {
         SchedulerPtr->yield();
       }
 
@@ -407,14 +530,32 @@ void *console(void *args) {
       ut.create(&Task1, producer, T1);
       ut.create(&Task2, consumer, T2);
 
-      for (int i = 0; i < 4; i++) {
-        SchedulerPtr->yield();
-      }
+      // for (int i = 0; i < 4; i++) {
+      //   SchedulerPtr->yield();
+      // }
+
+      SchedulerPtr->garbage_collect();
 
       write_window(Log_Win, " Scenario 3 Finished\n");
       break;
     }
+    case 'p': { // PAUSE the Scenarios
+      write_window(Log_Win, " PAUSED: 'r' TO RESUME\n");
+      while (input != 'r') {
+        input = wgetch(Console_Win);
+      }
+      write_window(Log_Win, " RESUMED\n");
+    }
+    case 'c': { // CLEAR the windows
+      write_defaults();
+      break;
+    }
+    case 'q': { // q for quit
+      endwin();
+      exit(0);
+    }
     default:
+      SchedulerPtr->yield();
       break;
     case ERR:
       SchedulerPtr->yield();
@@ -448,7 +589,7 @@ int main() {
   // Initializes the ncurses screen.
   initscr();
 
-  WINDOW *Heading_Win = newwin(10, 80, 3, 2);
+  Heading_Win = newwin(10, 80, 3, 2);
   box(Heading_Win, 0, 0);
   mvwprintw(Heading_Win, 2, 28, "161-ULTIMA 2.0 PHASE 2 DEMO");
   mvwprintw(Heading_Win, 4, 2, "Press 'h' to view the scenarios.");
@@ -456,29 +597,14 @@ int main() {
   wrefresh(Heading_Win);
 
   Log_Win = create_window(10, 60, 28, 2);
-  write_window(Log_Win, 1, 5, "...Log Window...\n");
-
   Console_Win = create_window(10, 20, 28, 62);
-  write_window(Console_Win, 1, 1, "...Console...\n");
-  write_window(Console_Win, 2, 1, "161-Ultima 2.0 #\n");
-
-  Task1_Win = create_window(15, 25, 13, 2);
-  write_window(Task1_Win, 6, 1, "Thread 1\n");
-
-  Task2_Win = create_window(15, 25, 13, 30);
-  write_window(Task2_Win, 6, 1, "Thread 2\n");
-
-  Task3_Win = create_window(15, 25, 13, 57);
-  write_window(Task3_Win, 6, 1, "Thread 3\n");
-
+  Task1_Win = create_window(15, 27, 13, 2);
+  Task2_Win = create_window(15, 26, 13, 29);
+  Task3_Win = create_window(15, 27, 13, 55);
   Sched_Win = create_window(8, 40, 3, 82);
-  write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
-
   Sema_Win = create_window(5, 40, 11, 82);
-  write_window(Sema_Win, 1, 3, "...Semaphore Window...\n");
-
-  Pipe_Win = create_window(10, 40, 16, 82);
-  write_window(Pipe_Win, 1, 3, "...Pipe Window...\n");
+  Pipe_Win = create_window(9, 40, 16, 82);
+  write_defaults();
 
   cbreak();
   noecho();
@@ -490,8 +616,10 @@ int main() {
   uthread_t console_task;
   ut.create(&console_task, console, NULL);
 
+  // *Immediately* start scheduler, since the Console is run off a uthread.
   SchedulerPtr->start();
 
+  // Wait for console to die, kill windows, return and exit.
   pthread_join(console_task, NULL);
   endwin();
 
