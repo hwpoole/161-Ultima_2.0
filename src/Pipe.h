@@ -62,6 +62,9 @@ public:
   // FALSE if Pipe is not empty.
   bool is_empty();
 
+  // Resets a Pipe by its id.
+  void reset(int id);
+
   // Prints current state of the pipe (for debugging/demo)
   string dump();
 };
