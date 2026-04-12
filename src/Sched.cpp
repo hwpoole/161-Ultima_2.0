@@ -479,5 +479,8 @@ string Scheduler::dump() {
     ss << buffer;
     TCBList.advance();
   }
+
+  process_table = TCBList.get_front();
+  current_task = process_table->task_id;
   return ss.str();
 }
