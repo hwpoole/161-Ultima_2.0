@@ -25,7 +25,7 @@ Kernel *KernelPtr = Kernel::Get_Instance();
 Scheduler *SchedulerPtr = KernelPtr->Get_Scheduler();
 
 // Ask the Kernel to make a Semaphore "Text".
-Semaphore *SemaphorePtr = KernelPtr->Create_Semaphore("Text");
+Semaphore *SemaphorePtr = KernelPtr->Create_Semaphore("Something special!");
 
 // Pipe *PipePtr = KernelPtr->Create_Pipe();
 
@@ -148,7 +148,7 @@ void display_help(WINDOW *Win) {
 void Tick() {
   // write to all windows here.
   write_window_fast(Sched_Win, SchedulerPtr->dump().c_str());
-  // write_window(Sema_Win, SemaphorePtr->dump().c_str());
+  write_window_fast(Sema_Win, SemaphorePtr->dump().c_str());
   //  write_window(Pipe_Win, PipePtr->dump().c_str());
 
   pthread_mutex_unlock(&Kernel::CPULocker);
@@ -380,8 +380,8 @@ int main() {
   Sched_Win = create_window(8, 40, 3, 82);
   write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
 
-  Sema_Win = create_window(8, 40, 11, 82);
-  write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
+  Sema_Win = create_window(5, 40, 11, 82);
+  write_window(Sched_Win, 1, 3, "...Semaphore Window...\n");
 
   cbreak();
   noecho();
