@@ -98,29 +98,26 @@ int Pipe::read() {
 }
 
 //dump()
-void Pipe::dump() {
+// Return pipe state as a string
+string Pipe::dump() {
+    stringstream ss;
 
-    cout << "\n===== PIPE STATE =====\n";
+    ss << "\n===== PIPE STATE =====\n";
+    ss << "Pipe ID: " << pfd << "\n";
 
-    cout << "Pipe ID: " << pfd << endl;
-
-    cout << "Buffer: ";
-
-    // Print elements currently in buffer
+    ss << "Buffer: ";
     for (int i = 0; i < count; i++) {
         int index = (read_ptr + i) % PIPE_SIZE;
-        cout << buffer[index] << " ";
+        ss << buffer[index] << " ";
     }
+    ss << "\n";
 
-    cout << endl;
+    ss << "Read Ptr: " << read_ptr << "\n";
+    ss << "Write Ptr: " << write_ptr << "\n";
+    ss << "Count: " << count << "\n";
+    ss << "Writer Task: " << writer_task << "\n";
+    ss << "Reader Task: " << reader_task << "\n";
+    ss << "======================\n";
 
-    cout << "Read Ptr: " << read_ptr << endl;
-    cout << "Write Ptr: " << write_ptr << endl;
-    cout << "Count: " << count << endl;
-
-    cout << "Writer Task: " << writer_task << endl;
-    cout << "Reader Task: " << reader_task << endl;
-
-    cout << "======================\n";
+    return ss.str();
 }
-
