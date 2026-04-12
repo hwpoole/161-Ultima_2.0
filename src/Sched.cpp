@@ -428,6 +428,13 @@ void Scheduler::garbage_collect() {
     process_table = nullptr;
     current_task = -1;
   }
+
+  // Hacky work-around for current Ultima 2.0 Phase 2 demo.
+  // TODO: Find a better way, perhaps. Probably not worth it.
+  ListSize = TCBList.size();
+  if (ListSize == 1) {
+    next_available_task_id = 1;
+  }
 }
 
 /* string dump() {...}
