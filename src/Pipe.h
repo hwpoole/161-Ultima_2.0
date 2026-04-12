@@ -12,7 +12,7 @@ using namespace std;
 
 class Pipe {
 private:
-  int pfd; // Pipe File Descriptor (unique ID for each pipe)
+  //  int pfd; // Pipe File Descriptor (unique ID for each pipe)
 
   char buffer[PIPE_SIZE]; // Fixed-size buffer to store data (like a queue)
 
@@ -26,6 +26,7 @@ private:
   int reader_task; // Stores Task ID of the reader (-1 means none assigned)
 
 public:
+  int pfd; // Pipe File Descriptor (unique ID for each pipe)
   // Constructor
   // Initializes pipe with a unique ID and sets default values
   Pipe(int id);
