@@ -193,10 +193,11 @@ void display_help(WINDOW *Win) {
   write_window(Win, 1, 1, "...Help...");
   write_window(Win, 2, 1, "1= Scenario 1");
   write_window(Win, 3, 1, "2= Scenario 2");
-  write_window(Win, 4, 1, "3= Dump Sched/Sema");
-  write_window(Win, 5, 1, "c= Clear screen");
-  write_window(Win, 6, 1, "h= Help screen");
-  write_window(Win, 7, 1, "q= Quit");
+  write_window(Win, 4, 1, "3= Scenario 3");
+  write_window(Win, 5, 1, "p= Pause");
+  write_window(Win, 6, 1, "c= Clear screen");
+  write_window(Win, 7, 1, "h= Help screen");
+  write_window(Win, 8, 1, "q= Quit");
 }
 
 /* void write_defaults() {...}
@@ -554,10 +555,18 @@ void *console(void *args) {
       endwin();
       exit(0);
     }
-    default:
+    case 'h':
+      display_help(Console_Win);
+    case ERR:
       SchedulerPtr->yield();
       break;
-    case ERR:
+    default:
+      sprintf(buffer, " %c", input);
+      write_window_fast(Console_Win, buffer);
+      write_window_fast(Console_Win, " -Invalid Command\n");
+      write_window_fast(Log_Win, buffer);
+      write_window_fast(Log_Win, " -Invalid Command\n");
+      write_window_fast(Console_Win, " 161-Ultima 2.0 #");
       SchedulerPtr->yield();
       break;
     }
