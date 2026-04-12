@@ -7,10 +7,11 @@
 */Introduction/
 introduction/
 Introduction/
-*/docs/
-*/Docs/
-docs/
-Docs/
+*.pdf
+*.docx
+*.mp4
+*.mp3
+*.HEIC
 *.zip
 
 ### CMake ###
