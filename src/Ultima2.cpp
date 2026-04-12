@@ -27,6 +27,8 @@ Scheduler *SchedulerPtr = KernelPtr->Get_Scheduler();
 // Ask the Kernel to make a Semaphore "Text".
 Semaphore *SemaphorePtr = KernelPtr->Create_Semaphore("Text");
 
+// Pipe *PipePtr = KernelPtr->Create_Pipe();
+
 // Uthread wraps pthreads for use with Kernel. "Ultima Thread."
 uthread ut;
 
@@ -36,6 +38,12 @@ WINDOW *Task2_Win;
 WINDOW *Task3_Win;
 WINDOW *Console_Win;
 WINDOW *Log_Win;
+WINDOW *Sched_Win;
+WINDOW *Sema_Win;
+WINDOW *Pipe_Win;
+
+// Tick function for syncrhonization.
+void Tick();
 
 /* struct TaskContext
  *
@@ -45,21 +53,6 @@ struct TaskContext {
   const char *name;
   WINDOW *win;
 };
-
-/* void Tick() {...}
- *
- * Slows everything down to "ticks."
- *
- * 1. Unlock the CPULocker.
- * 2. Sleep for 500ms.
- * 3. Lock the CPULocker.
- */
-void Tick() {
-  // write to all windows here.
-  pthread_mutex_unlock(&Kernel::CPULocker);
-  this_thread::sleep_for(chrono::milliseconds(500));
-  pthread_mutex_lock(&Kernel::CPULocker);
-}
 
 /* WINDOW *create_window(int height, int width, int starty, int startx) {...}
  *
@@ -99,6 +92,16 @@ void write_window(WINDOW *Win, const char *text) {
   Tick();
 }
 
+/* void write_window_fast(WINDOW *Win, const char *text) {...}
+ *
+ * A special implementation of write_window that does *not* call Tick().
+ */
+void write_window_fast(WINDOW *Win, const char *text) {
+  wprintw(Win, text);
+  box(Win, 0, 0);
+  wrefresh(Win);
+}
+
 /* void write_window_start(WINDOW *Win, int y, int x, const char *text) {...}
  *
  * A helper method to write to the window from Lab 4.
@@ -132,6 +135,25 @@ void display_help(WINDOW *Win) {
   write_window(Win, 5, 1, "c= Clear screen");
   write_window(Win, 6, 1, "h= Help screen");
   write_window(Win, 7, 1, "q= Quit");
+}
+
+/* void Tick() {...}
+ *
+ * Slows everything down to "ticks."
+ *
+ * 1. Unlock the CPULocker.
+ * 2. Sleep for 500ms.
+ * 3. Lock the CPULocker.
+ */
+void Tick() {
+  // write to all windows here.
+  write_window_fast(Sched_Win, SchedulerPtr->dump().c_str());
+  // write_window(Sema_Win, SemaphorePtr->dump().c_str());
+  //  write_window(Pipe_Win, PipePtr->dump().c_str());
+
+  pthread_mutex_unlock(&Kernel::CPULocker);
+  this_thread::sleep_for(chrono::milliseconds(500));
+  pthread_mutex_lock(&Kernel::CPULocker);
 }
 
 /* void *fake_work(void *args) {...}
@@ -337,6 +359,9 @@ int main() {
 
   Task3_Win = create_window(15, 25, 15, 57);
   write_window(Task3_Win, 6, 1, "Thread 3\n");
+
+  Sched_Win = create_window(8, 40, 3, 82);
+  write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
 
   cbreak();
   noecho();
