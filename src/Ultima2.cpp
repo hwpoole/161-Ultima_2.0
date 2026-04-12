@@ -207,12 +207,10 @@ void *fake_work(void *args) {
  */
 void *fake_work_with_sema(void *args) {
   TaskContext *Context = (TaskContext *)args;
-  int current_task = SchedulerPtr->get_task_id();
   char buffer[256];
 
   sprintf(buffer, " %s wants Sema\n", Context->name);
   write_window(Context->win, buffer);
-  // this_thread::sleep_for(chrono::milliseconds(500));
   SemaphorePtr->down();
 
   sprintf(buffer, " %s HAS Sema\n", Context->name);
@@ -226,16 +224,23 @@ void *fake_work_with_sema(void *args) {
     write_window(Context->win, buffer);
   }
 
-  if (SchedulerPtr->get_state(current_task) == BLOCKED) {
-    sprintf(buffer, " %s was blocked\n", Context->name);
-    write_window(Context->win, buffer);
-  }
-
   sprintf(buffer, " %s done w/ Sema\n", Context->name);
   write_window(Context->win, buffer);
   sprintf(buffer, " %s up() & yield\n", Context->name);
   write_window(Context->win, buffer);
   SemaphorePtr->up();
+
+  return (NULL);
+}
+
+/* void *fake_pipe_work(void *args) {...}
+ *
+ * For Scenario 3.
+ * A take on the producer-consumer problem that uses three tasks.
+ */
+void *fake_pipe_work(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
 
   return (NULL);
 }
@@ -276,7 +281,7 @@ void *console(void *args) {
 
     switch (input) {
     case '1': // Scenario 1 - each task all the way through.
-      write_window(Log_Win, " Scenario 1: One Task At A Time\n");
+      write_window(Log_Win, " Scenario 1: One thread at a time\n");
 
       ut.create(&Task1, fake_work, T1);
       ut.create(&Task2, fake_work, T2);
@@ -292,7 +297,7 @@ void *console(void *args) {
 
       ut.create(&Task1, fake_work_with_sema, T1);
       ut.create(&Task2, fake_work_with_sema, T2);
-      int task_3_id = ut.create(&Task3, fake_work_with_sema, T3);
+      ut.create(&Task3, fake_work_with_sema, T3);
 
       for (int i = 0; i < 4; i++) {
         SchedulerPtr->yield();
@@ -304,9 +309,21 @@ void *console(void *args) {
       break;
     }
     case 3: // Scenario 3 - Tasks communicate with Pipe.
+      write_window(Log_Win, " Scenario 3: Threads use Pipe\n");
+
+      ut.create(&Task1, fake_pipe_work, T1);
+      ut.create(&Task2, fake_pipe_work, T2);
+      ut.create(&Task3, fake_pipe_work, T3);
+
+      for (int i = 0; i < 4; i++) {
+        SchedulerPtr->yield();
+      }
+
+      write_window(Log_Win, " Scenario 3 Finished\n");
     default:
       break;
     case ERR:
+      SchedulerPtr->yield();
       break;
     }
   }
@@ -344,23 +361,26 @@ int main() {
   mvwprintw(Heading_Win, 5, 2, "Press 'q' or Crtl-C to exit the program.");
   wrefresh(Heading_Win);
 
-  Log_Win = create_window(10, 60, 30, 2);
+  Log_Win = create_window(10, 60, 28, 2);
   write_window(Log_Win, 1, 5, "...Log Window...\n");
 
-  Console_Win = create_window(10, 20, 30, 62);
+  Console_Win = create_window(10, 20, 28, 62);
   write_window(Console_Win, 1, 1, "...Console...\n");
   write_window(Console_Win, 2, 1, "161-Ultima 2.0 #\n");
 
-  Task1_Win = create_window(15, 25, 15, 2);
+  Task1_Win = create_window(15, 25, 13, 2);
   write_window(Task1_Win, 6, 1, "Thread 1\n");
 
-  Task2_Win = create_window(15, 25, 15, 30);
+  Task2_Win = create_window(15, 25, 13, 30);
   write_window(Task2_Win, 6, 1, "Thread 2\n");
 
-  Task3_Win = create_window(15, 25, 15, 57);
+  Task3_Win = create_window(15, 25, 13, 57);
   write_window(Task3_Win, 6, 1, "Thread 3\n");
 
   Sched_Win = create_window(8, 40, 3, 82);
+  write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
+
+  Sema_Win = create_window(8, 40, 11, 82);
   write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
 
   cbreak();
