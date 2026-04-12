@@ -33,40 +33,20 @@ add_executable(                         #
   src/Ultima.cpp
   src/Sched.cpp
   src/Sema.cpp
-)
-
-target_include_directories(
-  Ultima
-  PRIVATE
-  "${CMAKE_SOURCE_DIR}/src"
-  ${CURSES_INCLUDE_DIRS}
-)
-
-target_link_libraries(
-  Ultima
-  PRIVATE
-  ${CURSES_LIBRARIES}
-)
-
-add_executable(
-  Ultima2
-  src/Ultima2.cpp
-  src/Sched.cpp
-  src/Sema.cpp
   src/Kernel.cpp
   src/Uthread.cpp
   src/Pipe.cpp
 )
 
 target_include_directories(
-  Ultima2
+  Ultima
   PRIVATE
   "${CMAKE_SOURCE_DIR}/src"
   ${CURSES_INCLUDE_DIRS}
 )
 
 target_link_libraries(
-  Ultima2
+  Ultima
   PRIVATE
   ${CURSES_LIBRARIES}
 )
