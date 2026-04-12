@@ -46,6 +46,21 @@ struct TaskContext {
   WINDOW *win;
 };
 
+/* void Tick() {...}
+ *
+ * Slows everything down to "ticks."
+ *
+ * 1. Unlock the CPULocker.
+ * 2. Sleep for 500ms.
+ * 3. Lock the CPULocker.
+ */
+void Tick() {
+  // write to all windows here.
+  pthread_mutex_unlock(&Kernel::CPULocker);
+  this_thread::sleep_for(chrono::milliseconds(500));
+  pthread_mutex_lock(&Kernel::CPULocker);
+}
+
 /* WINDOW *create_window(int height, int width, int starty, int startx) {...}
  *
  * Helper method for creating windows from Lab 4.
@@ -74,12 +89,14 @@ WINDOW *create_window(int height, int width, int starty, int startx) {
  * 1. Call wprintw on the window with the text.
  * 2. Calls box 0,0 on the window.
  * 3. Refreshes the window.
+ * 4. Calls Tick()
  */
 void write_window(WINDOW *Win, const char *text) {
   wprintw(Win, text);
   box(Win, 0, 0);
   wrefresh(Win);
-  this_thread::sleep_for(chrono::milliseconds(500));
+
+  Tick();
 }
 
 /* void write_window_start(WINDOW *Win, int y, int x, const char *text) {...}
@@ -152,7 +169,6 @@ void *fake_work(void *args) {
   SemaphorePtr->down();
   sprintf(buffer, " %s yielding\n", Context->name);
   write_window(Context->win, buffer);
-  // this_thread::sleep_for(chrono::milliseconds(500));
   SemaphorePtr->up();
 
   return (NULL);
@@ -186,13 +202,11 @@ void *fake_work_with_sema(void *args) {
   for (int i = 0; i < 5; i++) {
     sprintf(buffer, " %s is working\n", Context->name);
     write_window(Context->win, buffer);
-    // this_thread::sleep_for(chrono::milliseconds(500));
   }
 
   if (SchedulerPtr->get_state(current_task) == BLOCKED) {
     sprintf(buffer, " %s was blocked\n", Context->name);
     write_window(Context->win, buffer);
-    // this_thread::sleep_for(chrono::milliseconds(500));
   }
 
   sprintf(buffer, " %s done w/ Sema\n", Context->name);
@@ -267,6 +281,7 @@ void *console(void *args) {
 
       break;
     }
+    case 3: // Scenario 3 - Tasks communicate with Pipe.
     default:
       break;
     case ERR:
