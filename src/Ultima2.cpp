@@ -9,6 +9,7 @@
 #include "Uthread.h" // Our Uthread - a pthread wrapper for the Kernel.
 #include <chrono>
 #include <cstddef>
+#include <cstdlib>
 #include <ncurses.h>
 #include <pthread.h>
 #include <thread>
@@ -18,16 +19,14 @@ using namespace std;
 
 //--------------Forward Declarations----------------
 
-// Get or find The Kernel from Kernel.h
+// Get "The Kernel" from Kernel.h
 Kernel *KernelPtr = Kernel::Get_Instance();
 
-// Get the scheduler's address from the Kernel.
+// Get The Scheduler's address from the Kernel.
 Scheduler *SchedulerPtr = KernelPtr->Get_Scheduler();
 
 // Ask the Kernel to make a Semaphore "Text".
 Semaphore *SemaphorePtr = KernelPtr->Create_Semaphore("Something special!");
-
-// Pipe *PipePtr = KernelPtr->Create_Pipe();
 
 // Uthread wraps pthreads for use with Kernel. "Ultima Thread."
 uthread ut;
@@ -48,10 +47,12 @@ void Tick();
 /* struct TaskContext
  *
  * Holds a pointer to the Task's name and window.
+ * Holds an int that determines who is the producer for Scenario 3.
  */
 struct TaskContext {
   const char *name;
   WINDOW *win;
+  int Producer;
 };
 
 /* WINDOW *create_window(int height, int width, int starty, int startx) {...}
@@ -95,6 +96,8 @@ void write_window(WINDOW *Win, const char *text) {
 /* void write_window_fast(WINDOW *Win, const char *text) {...}
  *
  * A special implementation of write_window that does *not* call Tick().
+ * Otherwise, write_window() calls Tick(), and Tick() calls write_window().
+ * Infinite recursion -> segmentation fault.
  */
 void write_window_fast(WINDOW *Win, const char *text) {
   wprintw(Win, text);
@@ -184,7 +187,6 @@ void *fake_work(void *args) {
     sprintf(buffer, " %s running\n", Context->name);
     write_window(Context->win, buffer);
     SemaphorePtr->up();
-    // this_thread::sleep_for(chrono::milliseconds(500));
   }
 
   // Prepare to yield. Kernel yields for us on return.
@@ -233,6 +235,10 @@ void *fake_work_with_sema(void *args) {
   return (NULL);
 }
 
+// Special Condition for Scenario 3 - not tracked by Kernel.
+// Declared and Initialized specifically for the producer-consumer problem.
+pthread_cond_t Pipe_cond = PTHREAD_COND_INITIALIZER;
+
 /* void *fake_pipe_work(void *args) {...}
  *
  * For Scenario 3.
@@ -242,7 +248,119 @@ void *fake_pipe_work(void *args) {
   TaskContext *Context = (TaskContext *)args;
   char buffer[256];
 
+  if (SchedulerPtr->get_task_id() == Context->Producer) {
+    sprintf(buffer, " %s is producer\n", Context->name);
+    write_window(Context->win, buffer);
+    sprintf(buffer, " %s creates Pipe 1\n", Context->name);
+    write_window(Context->win, buffer);
+    Pipe *PipePtr = KernelPtr->Get_Pipe(1);
+
+    sprintf(buffer, " %s locks Sema\n", Context->name);
+    write_window(Context->win, buffer);
+    SemaphorePtr->down();
+
+    if (PipePtr->open_for_write(Context->Producer)) {
+      for (int i = 0; i < 5; i++) {
+        pthread_mutex_lock(&PipeLocker);
+        PipePtr->close_read();
+
+        for (int j = 0; j < 5; j++) {
+          char rand_char = 'a' + rand() % 26;
+          sprintf(buffer, " %s writes '%c'\n", Context->name, rand_char);
+          write_window(Context->win, buffer);
+          PipePtr->write(rand_char);
+        }
+
+        pthread_mutex_unlock(&PipeLocker);
+
+        sprintf(buffer, " %s yields\n", Context->name);
+        write_window(Context->win, buffer);
+        pthread_cond_signal(&Pipe_cond);
+        SchedulerPtr->yield();
+
+        sprintf(buffer, " %s finished writing\n", Context->name);
+        SemaphorePtr->up();
+        SchedulerPtr->yield();
+      }
+    } else {
+      sprintf(buffer, " %s couldn't write Pipe 1\n", Context->name);
+      write_window(Context->win, buffer);
+      SemaphorePtr->up();
+      return (NULL);
+    }
+  } else {
+    sprintf(buffer, " %s is consumer\n", Context->name);
+    write_window(Context->win, buffer);
+    sprintf(buffer, "%s tries to read Pipe 1\n", Context->name);
+    write_window(Context->win, buffer);
+
+    Pipe *PipePtr = KernelPtr->Get_Pipe(1);
+    if (PipePtr->open_for_read(SchedulerPtr->get_task_id())) {
+      sprintf(buffer, " %s waits for Pipe\n", Context->name);
+      write_window(Context->win, buffer);
+      pthread_cond_wait(&Pipe_cond, &PipeLocker);
+
+      sprintf(buffer, " %s locks Sema\n", Context->name);
+      write_window(Context->win, buffer);
+      SemaphorePtr->down();
+      pthread_mutex_lock(&PipeLocker);
+
+      sprintf(buffer, " %s reads Pipe 1\n", Context->name);
+      write_window(Context->win, buffer);
+
+      for (int i = 0; i < 5; i++) {
+        pthread_mutex_lock(&PipeLocker);
+        PipePtr->close_write();
+
+        for (int j = 0; j < 5; j++) {
+          char read = PipePtr->read();
+          sprintf(buffer, " %s read '%c'", Context->name, read);
+          write_window(Context->win, buffer);
+        }
+
+        pthread_mutex_unlock()
+      }
+    } else {
+      sprintf(buffer, "%s couldn't reade Pipe 1\n", Context->name);
+      write_window(Context->win, buffer);
+      SemaphorePtr->up();
+      return (NULL);
+    }
+  }
+
   return (NULL);
+}
+
+void *producer(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  Pipe *PipePtr = KernelPtr->Get_Pipe(1);
+  char buffer[256];
+
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      char rand_char = ('a' + rand() % 26);
+      PipePtr->write(rand_char);
+    }
+
+    pthread_cond_signal(&Pipe_cond);
+    SchedulerPtr->yield();
+  }
+
+  return (NULL);
+}
+
+void *consumer(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  Pipe *PipePtr = KernelPtr->Get_Pipe(1);
+  char buffer[256];
+
+  pthread_cond_wait(&Pipe_cond, &Kernel::CPULocker);
+
+  char read = PipePtr->read();
+  while (read != -1) {
+    sprintf(buffer, "%s read '%c'", Context->name, read);
+    write_window(Context->win, buffer);
+  }
 }
 
 /* void *console(void *arg) {...}
@@ -308,18 +426,25 @@ void *console(void *args) {
 
       break;
     }
-    case 3: // Scenario 3 - Tasks communicate with Pipe.
+    case 3: { // Scenario 3 - Tasks communicate with Pipe.
       write_window(Log_Win, " Scenario 3: Threads use Pipe\n");
+
+      int Producer = (rand() % 3) + 1;
+      T1->Producer = Producer;
+      T2->Producer = Producer;
+      // T3->Producer = Producer;
 
       ut.create(&Task1, fake_pipe_work, T1);
       ut.create(&Task2, fake_pipe_work, T2);
-      ut.create(&Task3, fake_pipe_work, T3);
+      // ut.create(&Task3, fake_pipe_work, T3);
 
       for (int i = 0; i < 4; i++) {
         SchedulerPtr->yield();
       }
 
       write_window(Log_Win, " Scenario 3 Finished\n");
+      break;
+    }
     default:
       break;
     case ERR:
