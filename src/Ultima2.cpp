@@ -149,7 +149,7 @@ void Tick() {
   // write to all windows here.
   write_window_fast(Sched_Win, SchedulerPtr->dump().c_str());
   write_window_fast(Sema_Win, SemaphorePtr->dump().c_str());
-  //  write_window(Pipe_Win, PipePtr->dump().c_str());
+  //  write_window_fast(Pipe_Win, PipePtr->dump().c_str());
 
   pthread_mutex_unlock(&Kernel::CPULocker);
   this_thread::sleep_for(chrono::milliseconds(500));
@@ -381,7 +381,10 @@ int main() {
   write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
 
   Sema_Win = create_window(5, 40, 11, 82);
-  write_window(Sched_Win, 1, 3, "...Semaphore Window...\n");
+  write_window(Sema_Win, 1, 3, "...Semaphore Window...\n");
+
+  Pipe_Win = create_window(10, 40, 16, 82);
+  write_window(Pipe_Win, 1, 3, "...Pipe Window...\n");
 
   cbreak();
   noecho();
