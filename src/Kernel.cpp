@@ -157,3 +157,46 @@ Semaphore *Kernel::Create_Semaphore(const char *name) {
  * 1. Return a pointer to the scheduler.
  */
 Scheduler *Kernel::Get_Scheduler() { return scheduler; }
+
+/* Pipe *Create_Pipe(int id) {...}
+ *
+ * A method to create and register a Pipe with the Kernel.
+ *
+ * 1. Locks the CPULocker.
+ * 2. Creates a new Pipe with provided id.
+ * 3. Pushes it back onto Pipe_Vector.
+ * 4. Unlocks CPULocker.
+ * 5. Returns the pointer to the Pipe.
+ */
+Pipe *Kernel::Create_Pipe(int id) {
+  pthread_mutex_lock(&CPULocker);
+  Pipe *temp = new Pipe(id);
+  Pipe_Vector.push_back(temp);
+  pthread_mutex_unlock(&CPULocker);
+
+  return (temp);
+}
+
+/* Pipe *Get_Pipe(int id) {...}
+ *
+ * A method to get a Pipe from the Kernel by its id.
+ *
+ * 1. Locks the CPULocker.
+ * 2. Searches Pipe_Vector for the pipe matching the id.
+ * 3. If found, returns a pointer to the pipe.
+ * 4. Else, returns a new pipe from Create_Pipe().
+ */
+Pipe *Kernel::Get_Pipe(int id) {
+  pthread_mutex_lock(&CPULocker);
+  Pipe *temp = Pipe_Vector.front();
+
+  for (int i = 0; i < Pipe_Vector.size() && temp->pfd != id; i++) {
+    temp = Pipe_Vector.at(i);
+  }
+
+  if (temp->pfd == id) {
+    return (temp);
+  } else {
+    return (Kernel::Create_Pipe(id));
+  }
+}

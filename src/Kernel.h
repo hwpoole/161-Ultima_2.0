@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "Pipe.h"    // The Pipe.
 #include "Sched.h"   // The Scheduler.
 #include "Sema.h"    // The Semaphore.
 #include "Uthread.h" // Uthreads, our wrapper on pthreads.
@@ -67,6 +68,7 @@ private:
   static inline Kernel *KernelPtr = nullptr;
   Scheduler *scheduler;
   vector<Semaphore *> Sema_Vector;
+  vector<Pipe *> Pipe_Vector;
 
   // Constructor.
   Kernel();
@@ -105,6 +107,12 @@ public:
 
   // Getter for *scheduler.
   Scheduler *Get_Scheduler();
+
+  // Wrapper for creating pipes and registering with Kernel.
+  Pipe *Create_Pipe(int id);
+
+  // Gets a pipe from the Kernel by its id.
+  Pipe *Get_Pipe(int id);
 };
 
 /* struct Context
