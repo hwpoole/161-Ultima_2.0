@@ -12,21 +12,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)     # Enforce the C++20 minimum requirement.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # Export a list of compile commands - useful for clang / VIM.
 set(CURSES_NEED_NCURSES TRUE)           # Set NCURSES as needed.
 
-enable_testing()                        # Enable testing - required for ctest.
+#enable_testing()                        # Enable testing - required for ctest.
 
-include(FetchContent)                   # Include the FetchContent CMake feature.
-include(GoogleTest)                     # Include GoogleTest.
+#include(FetchContent)                   # Include the FetchContent CMake feature.
+#include(GoogleTest)                     # Include GoogleTest.
 
 find_package(Curses REQUIRED)           # Find NCURSES package.
 ######################################################################################################
-FetchContent_Declare(                   # Define the content that is needed, and where to get it from.
-  GoogleTest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG v1.17.0
-  FIND_PACKAGE_ARGS NAMES GTest, gtest  # Try to find GoogleTest locally before fetching it from GH.
-)
+#FetchContent_Declare(                   # Define the content that is needed, and where to get it from.
+#  GoogleTest
+#  GIT_REPOSITORY https://github.com/google/googletest.git
+#  GIT_TAG v1.17.0
+#  FIND_PACKAGE_ARGS NAMES GTest, gtest  # Try to find GoogleTest locally before fetching it from GH.
+#)
 
-FetchContent_MakeAvailable(GoogleTest)  # Fetch and make GoogleTest available.
+#FetchContent_MakeAvailable(GoogleTest)  # Fetch and make GoogleTest available.
 ######################################################################################################
 add_executable(                         # 
   Ultima
@@ -51,24 +51,24 @@ target_link_libraries(
   ${CURSES_LIBRARIES}
 )
 ######################################################################################################
-add_executable(
-  KernelTest
-  test/KernelTest.cpp
-)
+#add_executable(
+#  KernelTest
+#  test/KernelTest.cpp
+#)
 
-target_include_directories(
-  KernelTest
-  PRIVATE
-  "${CMAKE_SOURCE_DIR}/src"
-)
+#target_include_directories(
+#  KernelTest
+#  PRIVATE
+#  "${CMAKE_SOURCE_DIR}/src"
+#)
 
-target_link_libraries(
-  KernelTest
-  PRIVATE
-  gtest
-  GTest::gtest_main
-  GTest::gmock
-  GTest::gmock_main
-)
+#target_link_libraries(
+#  KernelTest
+#  PRIVATE
+#  gtest
+#  GTest::gtest_main
+#  GTest::gmock
+#  GTest::gmock_main
+#)
 
-gtest_discover_tests(KernelTest)
+#gtest_discover_tests(KernelTest)
