@@ -100,6 +100,9 @@ int Pipe::read() {
   return data; // Return character
 }
 
+// is_empty()
+bool Pipe::is_empty() { return (count == 0 ? true : false); }
+
 // dump()
 void Pipe::dump() {
 

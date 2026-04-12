@@ -57,6 +57,11 @@ public:
   // Returns -1 if buffer is EMPTY or no reader assigned
   int read();
 
+  // Returns a Bool.
+  // TRUE if Pipe is empty.
+  // FALSE if Pipe is not empty.
+  bool is_empty();
+
   // Prints current state of the pipe (for debugging/demo)
   void dump();
 };
