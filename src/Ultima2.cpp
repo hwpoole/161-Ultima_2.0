@@ -7,6 +7,7 @@
 #include "Sched.h"  // The Scheduler.
 #include "Sema.h"   // The Semaphore.
 #include "Uthread.h" // Our Uthread - a pthread wrapper for the Kernel.
+#include <chrono>
 #include <cstddef>
 #include <ncurses.h>
 #include <pthread.h>
@@ -78,9 +79,10 @@ void write_window(WINDOW *Win, const char *text) {
   wprintw(Win, text);
   box(Win, 0, 0);
   wrefresh(Win);
+  this_thread::sleep_for(chrono::milliseconds(500));
 }
 
-/* void write_window(WINDOW *Win, int y, int x, const char *text) {...}
+/* void write_window_start(WINDOW *Win, int y, int x, const char *text) {...}
  *
  * A helper method to write to the window from Lab 4.
  * An overloaded version of the above method.
@@ -143,14 +145,14 @@ void *fake_work(void *args) {
     sprintf(buffer, " %s running\n", Context->name);
     write_window(Context->win, buffer);
     SemaphorePtr->up();
-    this_thread::sleep_for(chrono::milliseconds(500));
+    // this_thread::sleep_for(chrono::milliseconds(500));
   }
 
   // Prepare to yield. Kernel yields for us on return.
   SemaphorePtr->down();
   sprintf(buffer, " %s yielding\n", Context->name);
   write_window(Context->win, buffer);
-  this_thread::sleep_for(chrono::milliseconds(500));
+  // this_thread::sleep_for(chrono::milliseconds(500));
   SemaphorePtr->up();
 
   return (NULL);
@@ -158,23 +160,46 @@ void *fake_work(void *args) {
 
 /* void *fake_work_with_sema(void *args) {...}
  *
- * TODO: Rework this.
+ * For Scenario 2.
+ * Each task declares it wants the Semaphore, and access to a guarded resource.
+ * They all make a mad dash to try and acquire it, only to be blocked and forced
+ * to wait.
+ *
+ * 1. Extract all arguments into a TaskContext struct *Context.
  */
 void *fake_work_with_sema(void *args) {
+  TaskContext *Context = (TaskContext *)args;
   int current_task = SchedulerPtr->get_task_id();
-  WINDOW *win;
-  const char *name;
   char buffer[256];
 
-  sprintf(buffer, " %s wants Sema\n", name);
-  write_window(win, buffer);
+  sprintf(buffer, " %s wants Sema\n", Context->name);
+  write_window(Context->win, buffer);
+  // this_thread::sleep_for(chrono::milliseconds(500));
   SemaphorePtr->down();
 
-  if (SchedulerPtr->get_state(current_task) == BLOCKED) {
-    sprintf(buffer, " %s was blocked\n", name);
-    write_window(win, buffer);
-    this_thread::sleep_for(chrono::milliseconds(500));
+  sprintf(buffer, " %s HAS Sema\n", Context->name);
+  write_window(Context->win, buffer);
+  sprintf(buffer, " %s yields\n", Context->name);
+  write_window(Context->win, buffer);
+  SchedulerPtr->yield();
+
+  for (int i = 0; i < 5; i++) {
+    sprintf(buffer, " %s is working\n", Context->name);
+    write_window(Context->win, buffer);
+    // this_thread::sleep_for(chrono::milliseconds(500));
   }
+
+  if (SchedulerPtr->get_state(current_task) == BLOCKED) {
+    sprintf(buffer, " %s was blocked\n", Context->name);
+    write_window(Context->win, buffer);
+    // this_thread::sleep_for(chrono::milliseconds(500));
+  }
+
+  sprintf(buffer, " %s done w/ Sema\n", Context->name);
+  write_window(Context->win, buffer);
+  sprintf(buffer, " %s up() & yield\n", Context->name);
+  write_window(Context->win, buffer);
+  SemaphorePtr->up();
 
   return (NULL);
 }
@@ -199,15 +224,15 @@ void *console(void *args) {
 
   uthread_t Task1, Task2, Task3;
   TaskContext *T1 = new TaskContext;
-  T1->name = "Task1";
+  T1->name = "Thread 1";
   T1->win = Task1_Win;
 
   TaskContext *T2 = new TaskContext;
-  T2->name = "Task2";
+  T2->name = "Thread 2";
   T2->win = Task2_Win;
 
   TaskContext *T3 = new TaskContext;
-  T3->name = "Task3";
+  T3->name = "Thread 3";
   T3->win = Task3_Win;
 
   while (input != 'q') {
@@ -221,11 +246,27 @@ void *console(void *args) {
       ut.create(&Task2, fake_work, T2);
       ut.create(&Task3, fake_work, T3);
       SchedulerPtr->yield();
+
       write_window(Log_Win, " Scenario 1 Finished\n");
       SchedulerPtr->garbage_collect();
 
       break;
-    case '2': // Scenario 2 - tasks get blocked by Semaphore.
+    case '2': { // Scenario 2 - tasks get blocked by Semaphore.
+      write_window(Log_Win, " Scenario 2: All want the Semaphore\n");
+
+      ut.create(&Task1, fake_work_with_sema, T1);
+      ut.create(&Task2, fake_work_with_sema, T2);
+      int task_3_id = ut.create(&Task3, fake_work_with_sema, T3);
+
+      for (int i = 0; i < 4; i++) {
+        SchedulerPtr->yield();
+      }
+
+      write_window(Log_Win, " Scenario 2 Finished\n");
+      SchedulerPtr->garbage_collect();
+
+      break;
+    }
     default:
       break;
     case ERR:
