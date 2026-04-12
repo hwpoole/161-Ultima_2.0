@@ -72,8 +72,8 @@ void Kernel::Bootstrap(void *context) {
   routine(args);
 
   scheduler->set_state(task_id, DEAD);
-  scheduler->yield();
   pthread_mutex_unlock(&CPULocker);
+  scheduler->yield();
 }
 
 /* Kernel *Get_Instance() {...}
