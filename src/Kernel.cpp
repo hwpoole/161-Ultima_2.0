@@ -21,7 +21,7 @@
  */
 Kernel::Kernel() {
   scheduler = new Scheduler();
-  scheduler->set_quantum(1);
+  scheduler->set_quantum(0);
   Semaphore::set_scheduler(scheduler);
 }
 
@@ -73,6 +73,7 @@ void Kernel::Bootstrap(void *context) {
 
   scheduler->set_state(task_id, DEAD);
   scheduler->yield();
+  pthread_mutex_unlock(&CPULocker);
 }
 
 /* Kernel *Get_Instance() {...}
