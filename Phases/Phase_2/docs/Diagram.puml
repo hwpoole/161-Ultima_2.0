@@ -1,0 +1,128 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+package "User Space" {
+    class uthread <<Facade>> {
+        + uthread() <<constructor>>
+        + create(newthread : uthread_t*, start_routine : void *(*start_routine)(void *), arg : void*) : int
+        + join(th : uthread_t, thread_return : void**) : int
+        + self() : uthread_t
+    }
+}
+package "Kernel Space" {
+    class Kernel <<Singleton>> <<Monitor>> {
+       - {static} KernelPtr : Kernel*
+       - scheduler : Scheduler*
+       - Sema_Vector : vector<Semaphore *>
+       - Pipe_Vector : vector<Pipe *>
+       - Kernel() <<constructor>>
+       - ~Kernel() <<destructor>>
+       - {static} Bootstrap_Wrapper(context : void*) : void*
+       - Bootstrap(context : void*) : void
+       + {static} CPULocker : pthread_mutex_t
+       + {static} Get_Instance() : Kernel*
+       + Create_Task(newthread : uthread_t*, start_routine : void *(*start_routine)(void *), arg : void*) : int
+       + Join_Task(th : uthread_t, thread_return : void**) : int
+       + Create_Semaphore(name : const char*) Semaphore*
+       + Get_Scheduler() : Scheduler*
+       + Create_Pipe(id : int) : Pipe*
+       + Get_Pipe(id : int) : Pipe*
+    }
+}
+package "Subsystems" {
+    class Scheduler {
+        - process_table : TCB*
+        - current_task : int
+        - current_quantum : long
+        - next_available_task_id : int
+        - TCBList : CircularLinkedList<TCB *>
+        + yield()
+        + start()
+        + set_state(int, STATE)
+    }
+    class Semaphore {
+        - resource_name : string
+        - sema_value : int
+        - sema_queue : queue<int>
+        - {static} scheduler : Scheduler*
+        + Semaphore(name : const char*)<<constructor>>
+        + ~Semaphore()<<destructor>>
+        + {static} set_scheduler(s : Scheduler*) : void
+        + down() : void
+        + up() : void
+        + dump() : string
+   }
+   class Pipe {
+       - buffer : char[32]
+       - read_ptr : int
+       - write_ptr : int
+       - count : int
+       - writer_task : int
+       - reader_task : int
+       + pfd : int
+       + open_for_write(task_id : int) : bool
+       + open_for_read(task_id : int) : bool
+       + close_write() : void
+       + close_read() : void
+       + write(data : char) : int
+       + read() : int
+       + is_empty() : bool
+       + reset() : void
+       + dump() : string
+   }
+}
+package "Low-Level Structures" {
+    class CircularLinkedList<T> {
+        - head : Node<T>*
+        - tail : Node<T>*
+        - empty : bool
+        - length : int
+        - ListLocker : mutex
+        + CirculuarLinkedList() <<constructor>>
+        + ~CircularLinkedList() <<destructor>>
+        + insert_front(value : T) : void
+        + insert_at(value : T, position : int) : void
+        + insert_end(value : T) : void
+        + remove_front() : void
+        + remove_end() : void
+        + is_empty() : bool
+        + size() : int
+        + advance() : void
+        + get_front() : T
+        + get_pos(key : T) : int
+        + get_next() : T
+        + get_end() : T
+        + move_to_key(key : T) : void
+        + set_value(value : T) : void
+        + set_nextvalue(value : T) : void
+        + dump() : void
+    }
+    struct TCB {
+        + task_id : int
+        + state : STATE
+        + start_time : clock_t
+        + thread_id : pthread_t
+        + thread_cond : pthread_cond_t
+   }
+   class Node<T> {
+        + data : T
+        + next : Node<T>*
+   }
+   enum STATE <<enumeration>> {
+       READY
+       RUNNING
+       BLOCKED
+       DEAD
+}
+}
+' Relationships
+uthread ..> Kernel : "delegates to"
+Kernel *-- Scheduler : "owns and uses"
+Kernel o-- Semaphore : "manages many"
+Kernel o-- Pipe : "manages many"
+Scheduler *-- CircularLinkedList : "uses for storage"
+CircularLinkedList *-- Node : "composed of"
+Scheduler *-- TCB : "manages many"
+Semaphore ..> Scheduler : "calls set_state"
+TCB ..> STATE : "uses"
+@enduml

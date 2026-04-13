@@ -12,6 +12,7 @@ Introduction/
 *.mp4
 *.mp3
 *.HEIC
+*.mov
 *.zip
 
 ### CMake ###
