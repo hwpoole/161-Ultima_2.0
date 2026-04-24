@@ -20,4 +20,6 @@ private:
 
 public:
   MMU();
+
+  ~MMU();
 };
