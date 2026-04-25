@@ -1,7 +1,8 @@
 #pragma once
 
-#include "CircularLinkedList.h"
 #include <list>
+#include <pthread.h>
+#include <string>
 
 using namespace std;
 
@@ -12,8 +13,7 @@ private:
   int Next_Handle = 0;
 
   struct Block {
-    int handle;
-    int base, limit;
+    int handle, base, limit, read, write;
     bool empty;
     pthread_t owner;
 
@@ -30,4 +30,12 @@ public:
   int Mem_Alloc(int Size);
 
   int Mem_Free(int Handle);
+
+  int Mem_Read(int Handle);
+
+  int Mem_Write(int Handle, char ch);
+
+  string Mem_Read(int Handle, int offset, int size);
+
+  int Mem_Write(int Handle, int offset, char *text);
 };

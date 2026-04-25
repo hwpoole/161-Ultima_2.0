@@ -1,11 +1,15 @@
 #include "MMU2.h"
+#include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <pthread.h>
-#include <vector>
 
 MMU::Block::Block() {
+  handle = -1;
   base = 0;
   limit = 0;
+  read = 0;
+  write = 0;
   empty = true;
   owner = -1;
 }
@@ -162,6 +166,175 @@ int MMU::Mem_Free(int Handle) {
   DeadBlock->empty = true;
   *it = DeadBlock;
   Next_Handle--;
+
+  return 1;
+}
+
+/* int Mem_Read(int Handle) {...}
+ *
+ * Finds a block by its handle, then reads a char from memory at the read
+ * pointer.
+ *
+ * 1. Check that handle is in range.
+ * 2. Find a block with the matching handle.
+ * 3. Error checking:
+ *    3a. Check that we found the proper block by handle.
+ *    3b. Check that read is less than the limit.
+ *    3c. Check that this thread owns this block.
+ * 4. Increment read pointer, read from memory, and return.
+ */
+int MMU::Mem_Read(int Handle) {
+  if (Handle < 0 || Handle > 16) {
+    return -1;
+  }
+
+  Block *TheBlock;
+  for (Block *block : Blocks) {
+    TheBlock = block;
+
+    if (TheBlock->handle == Handle) {
+      break;
+    }
+  }
+
+  if (TheBlock->handle != Handle) {
+    return -1;
+  } else if (TheBlock->read >= TheBlock->limit) {
+    return -1;
+  } else if (TheBlock->owner != pthread_self()) {
+    return -1;
+    // TODO: Seg fault here
+  }
+
+  return Memory[TheBlock->read++];
+}
+
+/* int Mem_Write(int Handle, char ch) {...}
+ *
+ * Finds a block by its handle, then writes a char into memory at the write
+ * pointer.
+ *
+ * 1. Check that handle is in range.
+ * 2. Find a block with the matching handle.
+ * 3. Error checking:
+ *    3a. Check that we found the proper block by handle.
+ *    3b. Check that write is less than limit.
+ *    3c. Check that this thread owns this block.
+ * 4. Write the char to the write pointer, and increment write pointer.
+ * 5. Return the char written as an int.
+ */
+int MMU::Mem_Write(int Handle, char ch) {
+  if (Handle < 0 || Handle > 16) {
+    return -1;
+  }
+
+  Block *TheBlock;
+  for (Block *block : Blocks) {
+    TheBlock = block;
+
+    if (TheBlock->handle == Handle) {
+      break;
+    }
+  }
+
+  if (TheBlock->handle != Handle) {
+    return -1;
+  } else if (TheBlock->write >= TheBlock->limit) {
+    return -1;
+  } else if (TheBlock->owner != pthread_self()) {
+    return -1;
+    // TODO: Seg fault here
+  }
+
+  Memory[TheBlock->write++] = ch;
+  return ch;
+}
+
+/* string Mem_Read(int Handle, int offset, int size) {...}
+ *
+ * Finds and returns a string of size 'size' from a block by its handle, at an
+ * offset from the current read pointer.
+ *
+ * 1. Check that handle is in range.
+ * 2. Find a block with the matching handle.
+ * 3. Error checking:
+ *    3a. Check that we found the proper block by handle.
+ *    3b. Check that this thread owns this block.
+ *    3c. Check that the string is completely in-bounds of the limit.
+ * 4. Build the return string from the chars read from Memory.
+ * 5. Return the string.
+ */
+string MMU::Mem_Read(int Handle, int offset, int size) {
+  if (Handle < 0 || Handle > 16) {
+    return "";
+  }
+
+  Block *TheBlock;
+  for (Block *block : Blocks) {
+    TheBlock = block;
+
+    if (TheBlock->handle == Handle) {
+      break;
+    }
+  }
+
+  if (TheBlock->handle != Handle) {
+    return "";
+  } else if (TheBlock->owner != pthread_self()) {
+    return "";
+    // TODO: Seg fault here
+  } else if (TheBlock->base + offset + size > TheBlock->limit) {
+    return "";
+  }
+
+  string return_string;
+  for (int i = TheBlock->base + offset; i < TheBlock->base + offset + size;
+       i++) {
+    return_string.append(&Memory[i]);
+  }
+
+  return return_string;
+}
+
+/* int Mem_Write(int Handle, int offset, char *text)
+ *
+ * Writes text to an offset within a specific block, identified by its handle.
+ *
+ * 1. Check that handle is in range.
+ * 2. Find a block with the matching handle.
+ * 3. Error checking:
+ *    3a. Check that we found the proper block by handle.
+ *    3b. Check that this thread owns this block.
+ *    3c. Check that the string is completely in-bounds of the limit.
+ * 4. Write text to memory at the offset.
+ * 5. Return 1.
+ */
+int MMU::Mem_Write(int Handle, int offset, char *text) {
+  if (Handle < 0 || Handle > 16) {
+    return -1;
+  }
+
+  Block *TheBlock;
+  for (Block *block : Blocks) {
+    TheBlock = block;
+
+    if (TheBlock->handle == Handle) {
+      break;
+    }
+  }
+
+  if (TheBlock->handle != Handle) {
+    return -1;
+  } else if (TheBlock->owner != pthread_self()) {
+    return -1;
+    // TODO: Seg fault here
+  } else if (TheBlock->base + offset + strlen(text) > TheBlock->limit) {
+    return -1;
+  }
+
+  for (int i = 0; i < strlen(text); i++) {
+    Memory[TheBlock->base + offset + i] = text[i];
+  }
 
   return 1;
 }
