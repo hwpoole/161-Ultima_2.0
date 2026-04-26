@@ -10,6 +10,7 @@
  */
 
 #include "MMU.h"
+#include "Sema.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -42,14 +43,13 @@ MMU::Block::Block() {
  * 3. Pushes it onto Blocks.
  */
 MMU::MMU() {
-  KernelPtr = Kernel::Get_Instance();
 
   fill(begin(Memory), end(Memory), '.');
   Block *NewBlock = new Block;
   NewBlock->limit = 1023;
   Blocks.push_back(NewBlock);
 
-  SemaphorePtr = KernelPtr->Create_Semaphore("Memory Semaphore");
+  SemaphorePtr = Kernel::Get_Instance()->Create_Semaphore("Memory Semaphore");
 }
 
 /* ~MMU() {...}
@@ -67,6 +67,7 @@ MMU::~MMU() {
     delete DeadBlock;
     Blocks.pop_back();
   }
+  SemaphorePtr->~Semaphore();
 }
 
 /* int Left() {...}
@@ -85,6 +86,7 @@ int MMU::Left() { return Free_Memory; }
  * 2. Return size of the largest block.
  */
 int MMU::Largest() {
+  SemaphorePtr->down();
   Block *TheLargest = nullptr;
 
   int found = 0;
@@ -100,6 +102,7 @@ int MMU::Largest() {
     }
   }
 
+  SemaphorePtr->up();
   return (TheLargest->limit - TheLargest->base);
 }
 
@@ -113,6 +116,7 @@ int MMU::Largest() {
  * 2. Return the size of the smallest block.
  */
 int MMU::Smallest() {
+  SemaphorePtr->down();
   Block *TheSmallest = nullptr;
 
   int found = 0;
@@ -128,6 +132,7 @@ int MMU::Smallest() {
     }
   }
 
+  SemaphorePtr->up();
   return (TheSmallest->limit - TheSmallest->base);
 }
 
@@ -216,8 +221,10 @@ MMU *MMU::Get_Instance() {
  *        b. Return the handle to that block.
  */
 int MMU::Alloc(int Size) {
+  SemaphorePtr->down();
   // Check if there is enough free memory.
   if (Free_Memory <= Size) {
+    SemaphorePtr->up();
     return -1;
   }
 
@@ -234,6 +241,7 @@ int MMU::Alloc(int Size) {
 
   // Check if we failed to find an orphaned block.
   if (Orphan->owner != -1 || !Orphan->empty) {
+    SemaphorePtr->up();
     return -1;
   }
 
@@ -274,6 +282,7 @@ int MMU::Alloc(int Size) {
     Blocks.insert(it, NewBlock);
 
     Free_Memory = Free_Memory - (NewBlock->limit - NewBlock->base + 1);
+    SemaphorePtr->up();
     return (Next_Handle - 1);
   } else {
     auto it = find(begin(Blocks), end(Blocks), Orphan);
@@ -282,6 +291,7 @@ int MMU::Alloc(int Size) {
     Orphan->handle = Next_Handle++;
     *it = Orphan;
 
+    SemaphorePtr->up();
     return (Next_Handle - 1);
   }
 }
@@ -304,8 +314,10 @@ int MMU::Alloc(int Size) {
  * 8. Return 1 for success.
  */
 int MMU::Free(int Handle) {
+  SemaphorePtr->down();
   // 16 Maximum blocks: 1024 / 64 = 16.
   if (Handle < 0 || Handle > 16) {
+    SemaphorePtr->up();
     return -1;
   }
 
@@ -319,6 +331,7 @@ int MMU::Free(int Handle) {
   }
 
   if (DeadBlock->handle != Handle) {
+    SemaphorePtr->up();
     return -1;
   }
 
@@ -339,6 +352,7 @@ int MMU::Free(int Handle) {
 
   MMU::Coalesce();
 
+  SemaphorePtr->up();
   return 1;
 }
 
@@ -356,7 +370,9 @@ int MMU::Free(int Handle) {
  * 4. Increment read pointer, read from memory, and return.
  */
 int MMU::Read(int Handle) {
+  SemaphorePtr->down();
   if (Handle < 0 || Handle > 16) {
+    SemaphorePtr->up();
     return -1;
   }
 
@@ -370,14 +386,18 @@ int MMU::Read(int Handle) {
   }
 
   if (TheBlock->handle != Handle) {
+    SemaphorePtr->up();
     return -1;
   } else if (TheBlock->read >= TheBlock->limit) {
+    SemaphorePtr->up();
     return -1;
   } else if (TheBlock->owner != pthread_self()) {
+    SemaphorePtr->up();
     return -1;
     // TODO: Seg fault here
   }
 
+  SemaphorePtr->up();
   return Memory[TheBlock->read++];
 }
 
@@ -396,7 +416,9 @@ int MMU::Read(int Handle) {
  * 5. Return the char written as an int.
  */
 int MMU::Write(int Handle, char ch) {
+  SemaphorePtr->down();
   if (Handle < 0 || Handle > 16) {
+    SemaphorePtr->up();
     return -1;
   }
 
@@ -410,17 +432,20 @@ int MMU::Write(int Handle, char ch) {
   }
 
   if (TheBlock->handle != Handle) {
+    SemaphorePtr->up();
     return -1;
   } else if (TheBlock->write >= TheBlock->limit) {
+    SemaphorePtr->up();
     return -1;
   } else if (TheBlock->owner != pthread_self()) {
+    SemaphorePtr->up();
     return -1;
     // TODO: Seg fault here
   }
 
   Memory[TheBlock->write++] = ch;
-
   TheBlock->empty = false;
+  SemaphorePtr->up();
   return ch;
 }
 
@@ -439,7 +464,9 @@ int MMU::Write(int Handle, char ch) {
  * 5. Return the string.
  */
 string MMU::Read(int Handle, int offset, int size) {
+  SemaphorePtr->down();
   if (Handle < 0 || Handle > 16) {
+    SemaphorePtr->up();
     return "";
   }
 
@@ -453,11 +480,14 @@ string MMU::Read(int Handle, int offset, int size) {
   }
 
   if (TheBlock->handle != Handle) {
+    SemaphorePtr->up();
     return "";
   } else if (TheBlock->owner != pthread_self()) {
+    SemaphorePtr->up();
     return "";
     // TODO: Seg fault here
   } else if (TheBlock->base + offset + size > TheBlock->limit) {
+    SemaphorePtr->up();
     return "";
   }
 
@@ -467,6 +497,7 @@ string MMU::Read(int Handle, int offset, int size) {
     return_string += (&Memory[i]);
   }
 
+  SemaphorePtr->up();
   return return_string;
 }
 
@@ -484,7 +515,9 @@ string MMU::Read(int Handle, int offset, int size) {
  * 5. Return 1.
  */
 int MMU::Write(int Handle, int offset, char *text) {
+  SemaphorePtr->down();
   if (Handle < 0 || Handle > 16) {
+    SemaphorePtr->up();
     return -1;
   }
 
@@ -498,11 +531,14 @@ int MMU::Write(int Handle, int offset, char *text) {
   }
 
   if (TheBlock->handle != Handle) {
+    SemaphorePtr->up();
     return -1;
   } else if (TheBlock->owner != pthread_self()) {
+    SemaphorePtr->up();
     return -1;
     // TODO: Seg fault here
   } else if (TheBlock->base + offset + strlen(text) > TheBlock->limit) {
+    SemaphorePtr->up();
     return -1;
   }
 
@@ -510,6 +546,7 @@ int MMU::Write(int Handle, int offset, char *text) {
     Memory[TheBlock->base + offset + i] = text[i];
   }
 
+  SemaphorePtr->up();
   return 1;
 }
 
@@ -525,7 +562,9 @@ int MMU::Write(int Handle, int offset, char *text) {
  * 6. Return string stream as string.
  */
 string MMU::Dump_A_Block(int Handle) {
+  SemaphorePtr->down();
   if (Handle < 0 || Handle > 16) {
+    SemaphorePtr->up();
     return "";
   }
 
@@ -539,6 +578,7 @@ string MMU::Dump_A_Block(int Handle) {
   }
 
   if (TheBlock->handle != Handle) {
+    SemaphorePtr->up();
     return "";
   }
 
@@ -560,6 +600,7 @@ string MMU::Dump_A_Block(int Handle) {
     }
   }
 
+  SemaphorePtr->up();
   return ss.str();
 }
 
@@ -571,6 +612,7 @@ string MMU::Dump_A_Block(int Handle) {
  * 2. Return string stream as string.
  */
 string MMU::Dump_Blocks() {
+  SemaphorePtr->down();
   stringstream ss;
   int limit = 10;
 
@@ -595,5 +637,6 @@ string MMU::Dump_Blocks() {
     ss << "\n" << endl;
   }
 
+  SemaphorePtr->up();
   return ss.str();
 }
