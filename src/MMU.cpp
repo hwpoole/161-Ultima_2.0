@@ -1,3 +1,14 @@
+/* Memory Management Unit Implementation File
+ * Ultima 2.0
+ *
+ * This file houses the Implementation details for the MMU class and Block
+ * constructor. It is recommended to view the header file for ways to use the
+ * MMU class.
+ *
+ * Hunter Poole
+ * 04-25-2026
+ */
+
 #include "MMU.h"
 #include <algorithm>
 #include <cmath>
@@ -6,6 +17,12 @@
 #include <pthread.h>
 #include <sstream>
 
+/* Block() {...}
+ *
+ * No-arg Block Constructor.
+ *
+ * Sets all Block values to defaults.
+ */
 MMU::Block::Block() {
   handle = -1;
   base = 0;
@@ -16,6 +33,14 @@ MMU::Block::Block() {
   owner = -1;
 }
 
+/* MMU() {...}
+ *
+ * No-arg MMU Constructor.
+ *
+ * 1. Fills Memory[] with '.'.
+ * 2. Makes a new Block for the entirety of Memory[].
+ * 3. Pushes it onto Blocks.
+ */
 MMU::MMU() {
   fill(begin(Memory), end(Memory), '.');
   Block *NewBlock = new Block;
@@ -23,6 +48,14 @@ MMU::MMU() {
   Blocks.push_back(NewBlock);
 }
 
+/* ~MMU() {...}
+ *
+ * Destructor. Removes all blocks from Blocks.
+ *
+ * 1. Get a block off of Blocks.
+ * 2. Delete it.
+ * 3. pop_back on blocks.
+ */
 MMU::~MMU() {
   while (!Blocks.empty()) {
     Block *DeadBlock;

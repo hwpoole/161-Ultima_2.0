@@ -1,3 +1,18 @@
+/* Memory Management Unit Header File
+ * Ultima 2.0
+ *
+ * The Memory Management Unit is responsible for managing the memory requested
+ * by tasks.
+ *
+ * Of note to the public:
+ *  1.  MMU()
+ *      - A no-arg constructor.
+ *  2.
+ *
+ * Hunter Poole
+ * 04-25-2026
+ */
+
 #pragma once
 
 #include <list>
@@ -8,6 +23,7 @@ using namespace std;
 
 class MMU {
 private:
+  static inline MMU *MMU_Ptr = nullptr;
   char Memory[1024];
   int Free_Memory = 1024;
   int Next_Handle = 0;
@@ -22,10 +38,12 @@ private:
 
   list<Block *> Blocks;
 
-public:
   MMU();
 
   ~MMU();
+
+public:
+  static MMU *Get_Instance();
 
   int Mem_Alloc(int Size);
 
