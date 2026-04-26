@@ -7,8 +7,8 @@
 cmake_minimum_required(VERSION 3.24)    # Set minimum required CMake version.
 project(161-Ultima-2.0)                 # Set project name as 161-Ultima 2.0
 
-set(CMAKE_CXX_STANDARD 20)              # Set C++20 as the minimum required C++ version.
-set(CMAKE_CXX_STANDARD_REQUIRED ON)     # Enforce the C++20 minimum requirement.
+set(CMAKE_CXX_STANDARD 23)              # Set C++23 as the minimum required C++ version.
+set(CMAKE_CXX_STANDARD_REQUIRED ON)     # Enforce the C++23 minimum requirement.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # Export a list of compile commands - useful for clang / VIM.
 set(CURSES_NEED_NCURSES TRUE)           # Set NCURSES as needed.
 

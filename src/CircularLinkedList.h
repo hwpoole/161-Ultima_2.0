@@ -374,15 +374,15 @@ public:
    *    - If so, return -1.
    * 2. Locks ListLocker.
    * 3. Checks if the head's data matches the key.
-   *    - If so, returns 1.
+   *    - If so, returns 0.
    * 4. Checks if the tail's data matches the key.
-   *    - If so, returns length.
+   *    - If so, returns length - 1.
    * 5. Else...
    *    - Make a temp node.
    *    - Iterate through the list until its found the key or touched every
    *      node.
-   *    - Returns temp->data if key found.
-   *    - Else, returns 0.
+   *    - Returns the iterations it took to find that key, if key found.
+   *    - Else, returns -1.
    */
   int get_pos(T key) {
     if (empty) {

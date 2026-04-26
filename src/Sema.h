@@ -61,7 +61,7 @@ private:
 public:
   Semaphore(const char *Name);
 
-  ~Semaphore();
+  ~Semaphore() = default;
 
   static void set_scheduler(Scheduler *s) { scheduler = s; }
 
