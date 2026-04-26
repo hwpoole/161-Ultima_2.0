@@ -608,14 +608,17 @@ string MMU::Dump_A_Block(int Handle) {
  *
  * Dumps all blocks, in the order they appear in Blocks.
  *
- * 1. For each block, dump all contents into a string stream.
- * 2. Return string stream as string.
+ * 1. Dump the memory semaphore.
+ * 2. For each block, dump all contents.
+ * 3. Return as string.
  */
 string MMU::Dump_Blocks() {
   SemaphorePtr->down();
   stringstream ss;
   int limit = 10;
 
+  ss << " ---------- Memory Semaphore ---------- " << endl;
+  ss << SemaphorePtr->dump() << endl;
   Block *TheBlock = nullptr;
   for (Block *block : Blocks) {
     TheBlock = block;
