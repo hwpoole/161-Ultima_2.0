@@ -218,7 +218,7 @@ int MMU::Alloc(int Size) {
   }
 
   // Find an orphaned block.
-  Block *Orphan;
+  Block *Orphan = nullptr;
   for (Block *block : Blocks) {
     Orphan = block;
 
@@ -305,7 +305,7 @@ int MMU::Free(int Handle) {
     return -1;
   }
 
-  Block *DeadBlock;
+  Block *DeadBlock = nullptr;
   for (Block *block : Blocks) {
     DeadBlock = block;
 
@@ -354,7 +354,7 @@ int MMU::Read(int Handle) {
     return -1;
   }
 
-  Block *TheBlock;
+  Block *TheBlock = nullptr;
   for (Block *block : Blocks) {
     TheBlock = block;
 
@@ -394,7 +394,7 @@ int MMU::Write(int Handle, char ch) {
     return -1;
   }
 
-  Block *TheBlock;
+  Block *TheBlock = nullptr;
   for (Block *block : Blocks) {
     TheBlock = block;
 
@@ -437,7 +437,7 @@ string MMU::Read(int Handle, int offset, int size) {
     return "";
   }
 
-  Block *TheBlock;
+  Block *TheBlock = nullptr;
   for (Block *block : Blocks) {
     TheBlock = block;
 
@@ -482,7 +482,7 @@ int MMU::Write(int Handle, int offset, char *text) {
     return -1;
   }
 
-  Block *TheBlock;
+  Block *TheBlock = nullptr;
   for (Block *block : Blocks) {
     TheBlock = block;
 
@@ -523,7 +523,7 @@ string MMU::Dump_A_Block(int Handle) {
     return "";
   }
 
-  Block *TheBlock;
+  Block *TheBlock = nullptr;
   for (Block *block : Blocks) {
     TheBlock = block;
 
@@ -568,7 +568,7 @@ string MMU::Dump_Blocks() {
   stringstream ss;
   int limit = 10;
 
-  Block *TheBlock;
+  Block *TheBlock = nullptr;
   for (Block *block : Blocks) {
     TheBlock = block;
 
