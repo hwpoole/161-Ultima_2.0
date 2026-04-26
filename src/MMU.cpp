@@ -65,6 +65,12 @@ MMU::~MMU() {
   }
 }
 
+/* int Left() {...}
+ *
+ * Returns the amount of free memory.
+ */
+int MMU::Left() { return Free_Memory; }
+
 /* MMU *Get_Instance() {...}
  *
  * MMU is Singleton.

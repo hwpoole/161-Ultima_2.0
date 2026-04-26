@@ -42,6 +42,8 @@ private:
 
   ~MMU();
 
+  int Left();
+
 public:
   static MMU *Get_Instance();
 
