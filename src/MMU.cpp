@@ -95,6 +95,30 @@ int MMU::Largest() {
   return (TheLargest->limit - TheLargest->base);
 }
 
+/* int Smallest() {...}
+ *
+ * Finds the smallest block of free memory and returns its size.
+ *
+ * 1. Loop over Blocks for free blocks.
+ *    1. If the current block's size is smaller than the known smallest...
+ *          Update the smallest block to the current block.
+ * 2. Return the size of the smallest block.
+ */
+int MMU::Smallest() {
+  Block *TheSmallest;
+
+  for (Block *Current : Blocks) {
+    if (Current->owner == -1) {
+      if ((Current->limit - Current->base) <
+          (TheSmallest->limit - TheSmallest->base)) {
+        TheSmallest = Current;
+      }
+    }
+  }
+
+  return (TheSmallest->limit - TheSmallest->base);
+}
+
 /* MMU *Get_Instance() {...}
  *
  * MMU is Singleton.
