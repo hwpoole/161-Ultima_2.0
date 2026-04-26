@@ -40,6 +40,7 @@
 
 #pragma once
 
+#include "Kernel.h"
 #include <list>
 #include <pthread.h>
 #include <string>
@@ -84,6 +85,8 @@ using namespace std;
 class MMU {
 private:
   static inline MMU *MMU_Ptr = nullptr;
+  Kernel *KernelPtr;
+  Semaphore *SemaphorePtr;
   char Memory[1024];
   int Free_Memory = 1024;
   int Next_Handle = 0;

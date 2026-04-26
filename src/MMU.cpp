@@ -42,10 +42,14 @@ MMU::Block::Block() {
  * 3. Pushes it onto Blocks.
  */
 MMU::MMU() {
+  KernelPtr = Kernel::Get_Instance();
+
   fill(begin(Memory), end(Memory), '.');
   Block *NewBlock = new Block;
   NewBlock->limit = 1023;
   Blocks.push_back(NewBlock);
+
+  SemaphorePtr = KernelPtr->Create_Semaphore("Memory Semaphore");
 }
 
 /* ~MMU() {...}
@@ -259,7 +263,7 @@ int MMU::Alloc(int Size) {
   if ((Orphan->limit - Orphan->base) > 63) {
     Block *NewBlock = new Block;
     NewBlock->base = Orphan->base;
-    NewBlock->limit = NewBlock->base + (ceil(Size / 64) * 64) - 1;
+    NewBlock->limit = NewBlock->base + (ceil((double)Size / 64.0) * 64) - 1;
     NewBlock->owner = pthread_self();
     NewBlock->handle = Next_Handle++;
 
