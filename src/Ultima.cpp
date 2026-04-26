@@ -59,6 +59,7 @@
  */
 
 #include "Kernel.h" // Singleton Monitor. Orchestrates all other Ultima classes.
+#include "MMU.h"    // Memory Management Unit.
 #include "Sched.h"  // The Scheduler.
 #include "Sema.h"   // The Semaphore.
 #include "Uthread.h" // Our Uthread - a pthread wrapper for the Kernel.
@@ -82,6 +83,9 @@ Scheduler *SchedulerPtr = KernelPtr->Get_Scheduler();
 
 // Ask the Kernel to make a Semaphore "Text".
 Semaphore *SemaphorePtr = KernelPtr->Create_Semaphore("Something special!");
+
+// Get a pointer to the MMU.
+MMU *MMUPtr = MMU::Get_Instance();
 
 // Uthread wraps pthreads for use with Kernel. "Ultima Thread."
 uthread ut;
@@ -195,10 +199,11 @@ void display_help(WINDOW *Win) {
   write_window(Win, 2, 1, "1= Scenario 1");
   write_window(Win, 3, 1, "2= Scenario 2");
   write_window(Win, 4, 1, "3= Scenario 3");
-  write_window(Win, 5, 1, "p= Pause");
-  write_window(Win, 6, 1, "c= Clear screen");
-  write_window(Win, 7, 1, "h= Help screen");
-  write_window(Win, 8, 1, "q= Quit");
+  write_window(Win, 5, 1, "4= Scenario 4");
+  write_window(Win, 6, 1, "p= Pause");
+  write_window(Win, 7, 1, "c= Clear screen");
+  write_window(Win, 8, 1, "h= Help screen");
+  write_window(Win, 9, 1, "q= Quit");
 }
 
 /* void write_defaults() {...}
@@ -217,6 +222,7 @@ void write_defaults() {
   wclear(Sched_Win);
   wclear(Sema_Win);
   wclear(Pipe_Win);
+  wclear(MMU_Win);
 
   write_window(Log_Win, 1, 5, "...Log Window...\n");
   write_window(Console_Win, 1, 1, "...Console...\n");
@@ -227,6 +233,7 @@ void write_defaults() {
   write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
   write_window(Sema_Win, 1, 3, "...Semaphore Window...\n");
   write_window(Pipe_Win, 1, 3, "...Pipe Window...\n");
+  write_window(MMU_Win, 1, 3, "...MMU Window...\n");
 }
 
 /* void Tick() {...}
@@ -249,6 +256,10 @@ void Tick() {
 
   if (PipePtr != nullptr) {
     write_window_fast(Pipe_Win, PipePtr->dump().c_str());
+  }
+
+  if (MMUPtr != nullptr) {
+    write_window_fast(MMU_Win, MMUPtr->Dump_Blocks().c_str());
   }
 
   pthread_mutex_unlock(&Kernel::CPULocker);
@@ -540,6 +551,8 @@ void *console(void *args) {
 
       write_window(Log_Win, " Scenario 3 Finished\n");
       break;
+    }
+    case '4': { // Scenario 4 - Tasks use Memory Management Unit.
     }
     case 'p': { // PAUSE the Scenarios
       write_window(Log_Win, " PAUSED: 'r' TO RESUME\n");
