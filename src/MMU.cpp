@@ -84,7 +84,7 @@ MMU *MMU::Get_Instance() {
   return MMU_Ptr;
 }
 
-/* int Mem_Alloc(int Size) {...}
+/* int Alloc(int Size) {...}
  *
  * Finds a free block and assigns it to the requesting task.
  * Returns a handle to that block.
@@ -102,7 +102,7 @@ MMU *MMU::Get_Instance() {
  *        a. Assign that block to the requesting task.
  *        b. Return the handle to that block.
  */
-int MMU::Mem_Alloc(int Size) {
+int MMU::Alloc(int Size) {
   // Check if there is enough free memory.
   if (Free_Memory <= Size) {
     return -1;
@@ -173,7 +173,7 @@ int MMU::Mem_Alloc(int Size) {
   }
 }
 
-/* int Mem_Free(int Handle) {...}
+/* int Free(int Handle) {...}
  *
  * Finds a block of memory by its handle and deletes its contents.
  * Then, marks the block as having no owner, no handle, and being empty.
@@ -189,7 +189,7 @@ int MMU::Mem_Alloc(int Size) {
  * 6. Decrement Next_Handle.
  * 7. Return 1 for success.
  */
-int MMU::Mem_Free(int Handle) {
+int MMU::Free(int Handle) {
   // 16 Maximum blocks: 1024 / 64 = 16.
   if (Handle < 0 || Handle > 16) {
     return -1;
@@ -224,7 +224,7 @@ int MMU::Mem_Free(int Handle) {
   return 1;
 }
 
-/* int Mem_Read(int Handle) {...}
+/* int Read(int Handle) {...}
  *
  * Finds a block by its handle, then reads a char from memory at the read
  * pointer.
@@ -237,7 +237,7 @@ int MMU::Mem_Free(int Handle) {
  *    3c. Check that this thread owns this block.
  * 4. Increment read pointer, read from memory, and return.
  */
-int MMU::Mem_Read(int Handle) {
+int MMU::Read(int Handle) {
   if (Handle < 0 || Handle > 16) {
     return -1;
   }
@@ -263,7 +263,7 @@ int MMU::Mem_Read(int Handle) {
   return Memory[TheBlock->read++];
 }
 
-/* int Mem_Write(int Handle, char ch) {...}
+/* int Write(int Handle, char ch) {...}
  *
  * Finds a block by its handle, then writes a char into memory at the write
  * pointer.
@@ -277,7 +277,7 @@ int MMU::Mem_Read(int Handle) {
  * 4. Write the char to the write pointer, and increment write pointer.
  * 5. Return the char written as an int.
  */
-int MMU::Mem_Write(int Handle, char ch) {
+int MMU::Write(int Handle, char ch) {
   if (Handle < 0 || Handle > 16) {
     return -1;
   }
@@ -304,7 +304,7 @@ int MMU::Mem_Write(int Handle, char ch) {
   return ch;
 }
 
-/* string Mem_Read(int Handle, int offset, int size) {...}
+/* string Read(int Handle, int offset, int size) {...}
  *
  * Finds and returns a string of size 'size' from a block by its handle, at an
  * offset from the current read pointer.
@@ -318,7 +318,7 @@ int MMU::Mem_Write(int Handle, char ch) {
  * 4. Build the return string from the chars read from Memory.
  * 5. Return the string.
  */
-string MMU::Mem_Read(int Handle, int offset, int size) {
+string MMU::Read(int Handle, int offset, int size) {
   if (Handle < 0 || Handle > 16) {
     return "";
   }
@@ -350,7 +350,7 @@ string MMU::Mem_Read(int Handle, int offset, int size) {
   return return_string;
 }
 
-/* int Mem_Write(int Handle, int offset, char *text)
+/* int Write(int Handle, int offset, char *text)
  *
  * Writes text to an offset within a specific block, identified by its handle.
  *
@@ -363,7 +363,7 @@ string MMU::Mem_Read(int Handle, int offset, int size) {
  * 4. Write text to memory at the offset.
  * 5. Return 1.
  */
-int MMU::Mem_Write(int Handle, int offset, char *text) {
+int MMU::Write(int Handle, int offset, char *text) {
   if (Handle < 0 || Handle > 16) {
     return -1;
   }

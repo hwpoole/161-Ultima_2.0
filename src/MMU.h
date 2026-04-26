@@ -51,17 +51,17 @@ public:
 
   MMU &operator=(const MMU &) = delete;
 
-  int Mem_Alloc(int Size);
+  int Alloc(int Size);
 
-  int Mem_Free(int Handle);
+  int Free(int Handle);
 
-  int Mem_Read(int Handle);
+  int Read(int Handle);
 
-  int Mem_Write(int Handle, char ch);
+  int Write(int Handle, char ch);
 
-  string Mem_Read(int Handle, int offset, int size);
+  string Read(int Handle, int offset, int size);
 
-  int Mem_Write(int Handle, int offset, char *text);
+  int Write(int Handle, int offset, char *text);
 
   string Dump_A_Block(int Handle);
 
