@@ -71,6 +71,30 @@ MMU::~MMU() {
  */
 int MMU::Left() { return Free_Memory; }
 
+/* int Largest() {...}
+ *
+ * Finds the largest block of free memory and returns its size.
+ *
+ * 1. Loop over Blocks for free blocks.
+ *    1a. If the current block's size is larger than the known largest...
+ *          Update the largest block to be the current block.
+ * 2. Return size of the largest block.
+ */
+int MMU::Largest() {
+  Block *TheLargest;
+
+  for (Block *Current : Blocks) {
+    if (Current->owner == -1) {
+      if ((Current->limit - Current->base) >
+          (TheLargest->limit - TheLargest->base)) {
+        TheLargest = Current;
+      }
+    }
+  }
+
+  return (TheLargest->limit - TheLargest->base);
+}
+
 /* MMU *Get_Instance() {...}
  *
  * MMU is Singleton.

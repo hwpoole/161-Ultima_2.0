@@ -44,6 +44,8 @@ private:
 
   int Left();
 
+  int Largest();
+
 public:
   static MMU *Get_Instance();
 
