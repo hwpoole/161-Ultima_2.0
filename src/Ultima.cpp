@@ -99,6 +99,7 @@ WINDOW *Log_Win;
 WINDOW *Sched_Win;
 WINDOW *Sema_Win;
 WINDOW *Pipe_Win;
+WINDOW *MMU_Win;
 
 // Tick function for syncrhonization.
 void Tick();
@@ -613,6 +614,7 @@ int main() {
   Sched_Win = create_window(8, 40, 3, 82);
   Sema_Win = create_window(5, 40, 11, 82);
   Pipe_Win = create_window(9, 40, 16, 82);
+  MMU_Win = create_window(9, 40, 20, 82);
   write_defaults();
 
   cbreak();
