@@ -479,7 +479,6 @@ void *use_mmu(void *args) {
 
   sprintf(buffer, " %s wants to read\n", Context->name);
   write_window(Context->win, buffer);
-
   read = MMUPtr->Read(handle);
   if (read == -1) {
     sprintf(buffer, " ERROR! Can't read\n I forgot to Alloc()...\n");
@@ -495,7 +494,6 @@ void *use_mmu(void *args) {
 
   sprintf(buffer, " %s Alloc()'s 10,000\n", Context->name);
   write_window(Context->win, buffer);
-
   handle = MMUPtr->Alloc(10000);
   if (handle == -1) {
     sprintf(buffer, " ERROR! Can't Alloc()\n Guess that's too much?\n");
@@ -507,6 +505,14 @@ void *use_mmu(void *args) {
     write_window(Context->win, buffer);
 
     SchedulerPtr->yield();
+  }
+
+  sprintf(buffer, " %s Alloc()'s 64\n", Context->name);
+  handle = MMUPtr->Alloc(64);
+  write_window(Context->win, buffer);
+  if (handle != -1) {
+    sprintf(buffer, " Success!\n");
+    write_window(Context->win, buffer);
   }
 
   return (NULL);
@@ -667,7 +673,7 @@ int main() {
   Sched_Win = create_window(8, 40, 3, 83);
   Sema_Win = create_window(5, 40, 11, 83);
   Pipe_Win = create_window(9, 40, 16, 83);
-  MMU_Win = create_window(52, 92, 25, 83);
+  MMU_Win = create_window(55, 92, 25, 83);
   write_defaults();
 
   cbreak();
