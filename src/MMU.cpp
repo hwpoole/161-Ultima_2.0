@@ -65,6 +65,19 @@ MMU::~MMU() {
   }
 }
 
+/* MMU *Get_Instance() {...}
+ *
+ * MMU is Singleton.
+ * Returns the MMU_Ptr or makes a new one if nullptr.
+ */
+MMU *MMU::Get_Instance() {
+  if (MMU_Ptr == nullptr) {
+    MMU_Ptr = new MMU();
+  }
+
+  return MMU_Ptr;
+}
+
 /* int Mem_Alloc(int Size) {...}
  *
  * Finds a free block and assigns it to the requesting task.

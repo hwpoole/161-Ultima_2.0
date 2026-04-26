@@ -45,6 +45,10 @@ private:
 public:
   static MMU *Get_Instance();
 
+  MMU(const MMU &) = delete;
+
+  MMU &operator=(const MMU &) = delete;
+
   int Mem_Alloc(int Size);
 
   int Mem_Free(int Handle);
