@@ -528,13 +528,6 @@ void *console(void *args) {
       ut.create(&Task2, fake_work_with_sema, T2);
       ut.create(&Task3, fake_work_with_sema, T3);
 
-      for (int i = 0; i < 4; i++) {
-        SchedulerPtr->yield();
-      }
-
-      write_window(Log_Win, " Scenario 2 Finished\n");
-      SchedulerPtr->garbage_collect();
-
       break;
     }
     case '3': { // Scenario 3 - Tasks communicate with Pipe.
@@ -543,16 +536,14 @@ void *console(void *args) {
       ut.create(&Task1, producer, T1);
       ut.create(&Task2, consumer, T2);
 
-      // for (int i = 0; i < 4; i++) {
-      //   SchedulerPtr->yield();
-      // }
-
-      SchedulerPtr->garbage_collect();
-
-      write_window(Log_Win, " Scenario 3 Finished\n");
       break;
     }
     case '4': { // Scenario 4 - Tasks use Memory Management Unit.
+      write_window(Log_Win, " Scenario 4: Threads use MMU\n");
+
+      // ut.create(&Task1, use_mmu, T1);
+      // ut.create(&Task2, use_mmu, T2);
+      // ut.create(&Task3, use_mmu, T3);
     }
     case 'p': { // PAUSE the Scenarios
       write_window(Log_Win, " PAUSED: 'r' TO RESUME\n");
@@ -563,6 +554,7 @@ void *console(void *args) {
     }
     case 'c': { // CLEAR the windows
       write_defaults();
+      SchedulerPtr->garbage_collect();
       break;
     }
     case 'q': { // q for quit
@@ -627,7 +619,7 @@ int main() {
   Sched_Win = create_window(8, 40, 3, 82);
   Sema_Win = create_window(5, 40, 11, 82);
   Pipe_Win = create_window(9, 40, 16, 82);
-  MMU_Win = create_window(9, 40, 20, 82);
+  MMU_Win = create_window(52, 92, 25, 82);
   write_defaults();
 
   cbreak();

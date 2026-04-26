@@ -612,7 +612,7 @@ string MMU::Dump_A_Block(int Handle) {
 string MMU::Dump_Blocks() {
   SemaphorePtr->down();
   stringstream ss;
-  int limit = 10;
+  int limit = 90;
 
   ss << " ---------- Memory Semaphore ---------- " << endl;
   ss << SemaphorePtr->dump() << endl;
