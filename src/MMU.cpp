@@ -269,7 +269,7 @@ int MMU::Alloc(int Size) {
     *it = Orphan;
     Blocks.insert(it, NewBlock);
 
-    Free_Memory = Free_Memory - (NewBlock->limit - NewBlock->base);
+    Free_Memory = Free_Memory - (NewBlock->limit - NewBlock->base + 1);
     return (Next_Handle - 1);
   } else {
     auto it = find(begin(Blocks), end(Blocks), Orphan);
@@ -296,7 +296,8 @@ int MMU::Alloc(int Size) {
  * 4. Loop over the block's range (base to limit) in memory to write '#'.
  * 5. Update the block to have no owner, no handle, and be empty.
  * 6. Decrement Next_Handle.
- * 7. Return 1 for success.
+ * 7 Update Free_Memory.
+ * 8. Return 1 for success.
  */
 int MMU::Free(int Handle) {
   // 16 Maximum blocks: 1024 / 64 = 16.
@@ -329,6 +330,8 @@ int MMU::Free(int Handle) {
   DeadBlock->empty = true;
   *it = DeadBlock;
   Next_Handle--;
+
+  Free_Memory += DeadBlock->limit - DeadBlock->base + 1;
 
   return 1;
 }
@@ -410,6 +413,8 @@ int MMU::Write(int Handle, char ch) {
   }
 
   Memory[TheBlock->write++] = ch;
+
+  TheBlock->empty = false;
   return ch;
 }
 
@@ -453,7 +458,7 @@ string MMU::Read(int Handle, int offset, int size) {
   string return_string;
   for (int i = TheBlock->base + offset; i < TheBlock->base + offset + size;
        i++) {
-    return_string.append(&Memory[i]);
+    return_string += (&Memory[i]);
   }
 
   return return_string;
