@@ -328,6 +328,8 @@ int MMU::Free(int Handle) {
   DeadBlock->owner = -1;
   DeadBlock->handle = -1;
   DeadBlock->empty = true;
+  DeadBlock->write = DeadBlock->base;
+  DeadBlock->read = DeadBlock->base;
   *it = DeadBlock;
   Next_Handle--;
 
