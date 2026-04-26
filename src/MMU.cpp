@@ -95,6 +95,48 @@ int MMU::Largest() {
   return (TheLargest->limit - TheLargest->base);
 }
 
+/* void Coalesce() {...}
+ *
+ * Finds all empty blocks, deletes them, and reconstructs them at the end of
+ * Blocks.
+ *
+ * 1. Search for empty blocks.
+ *    1a. If empty block found...
+ *        a. Make an iterator for it.
+ *        b. Push that interator onto a list of iterators.
+ *        c. Take its size and add it to total_size.
+ * 2. For each iterator...
+ *    2a. Delete its block from the list.
+ * 3. Make a new block after the current end.
+ * 4. Set that block's size to be total_size.
+ * 5. Push it onto the list of blocks.
+ */
+void MMU::Coalesce() {
+  list<_List_iterator<MMU::Block *>> Positions;
+  int total_size = 0;
+
+  for (Block *block : Blocks) {
+    if (block->owner == -1) {
+      _List_iterator<MMU::Block *> it =
+          find(Blocks.begin(), Blocks.end(), block);
+      Positions.push_back(it);
+
+      total_size += block->limit - block->base;
+    }
+  }
+
+  for (_List_iterator<MMU::Block *> iterator : Positions) {
+    Blocks.erase(iterator);
+  }
+
+  Block *CurrentEnd = Blocks.back();
+  Block *NewEmpty;
+  NewEmpty->base = CurrentEnd->limit + 1;
+  NewEmpty->limit = NewEmpty->base + total_size;
+
+  Blocks.push_back(NewEmpty);
+}
+
 /* int Smallest() {...}
  *
  * Finds the smallest block of free memory and returns its size.

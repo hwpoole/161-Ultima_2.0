@@ -48,6 +48,8 @@ private:
 
   int Smallest();
 
+  void Coalesce();
+
 public:
   static MMU *Get_Instance();
 
