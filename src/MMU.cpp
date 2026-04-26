@@ -30,7 +30,6 @@ MMU::Block::Block() {
   limit = 0;
   read = 0;
   write = 0;
-  empty = true;
   owner = -1;
 }
 
@@ -67,7 +66,7 @@ MMU::~MMU() {
     delete DeadBlock;
     Blocks.pop_back();
   }
-  SemaphorePtr->~Semaphore();
+  delete SemaphorePtr;
 }
 
 /* int Left() {...}
@@ -223,7 +222,7 @@ MMU *MMU::Get_Instance() {
 int MMU::Alloc(int Size) {
   SemaphorePtr->down();
   // Check if there is enough free memory.
-  if (Free_Memory <= Size) {
+  if (Free_Memory < Size) {
     SemaphorePtr->up();
     return -1;
   }
@@ -240,7 +239,7 @@ int MMU::Alloc(int Size) {
   }
 
   // Check if we failed to find an orphaned block.
-  if (Orphan->owner != -1 || !Orphan->empty) {
+  if (Orphan->owner != -1) {
     SemaphorePtr->up();
     return -1;
   }
@@ -281,7 +280,7 @@ int MMU::Alloc(int Size) {
     *it = Orphan;
     Blocks.insert(it, NewBlock);
 
-    Free_Memory = Free_Memory - (NewBlock->limit - NewBlock->base + 1);
+    Free_Memory -= (NewBlock->limit - NewBlock->base + 1);
     SemaphorePtr->up();
     return (Next_Handle - 1);
   } else {
@@ -291,6 +290,7 @@ int MMU::Alloc(int Size) {
     Orphan->handle = Next_Handle++;
     *it = Orphan;
 
+    Free_Memory -= (Orphan->limit - Orphan->base + 1);
     SemaphorePtr->up();
     return (Next_Handle - 1);
   }
@@ -344,7 +344,6 @@ int MMU::Free(int Handle) {
   int pos = distance(begin(Blocks), it);
   DeadBlock->owner = -1;
   DeadBlock->handle = -1;
-  DeadBlock->empty = true;
   DeadBlock->write = DeadBlock->base;
   DeadBlock->read = DeadBlock->base;
   *it = DeadBlock;
@@ -388,7 +387,7 @@ int MMU::Read(int Handle) {
   if (TheBlock->handle != Handle) {
     SemaphorePtr->up();
     return -1;
-  } else if (TheBlock->read >= TheBlock->limit) {
+  } else if (TheBlock->read > TheBlock->limit) {
     SemaphorePtr->up();
     return -1;
   } else if (TheBlock->owner != pthread_self()) {
@@ -434,7 +433,7 @@ int MMU::Write(int Handle, char ch) {
   if (TheBlock->handle != Handle) {
     SemaphorePtr->up();
     return -1;
-  } else if (TheBlock->write >= TheBlock->limit) {
+  } else if (TheBlock->write > TheBlock->limit) {
     SemaphorePtr->up();
     return -1;
   } else if (TheBlock->owner != pthread_self()) {
@@ -444,7 +443,6 @@ int MMU::Write(int Handle, char ch) {
   }
 
   Memory[TheBlock->write++] = ch;
-  TheBlock->empty = false;
   SemaphorePtr->up();
   return ch;
 }
@@ -494,7 +492,7 @@ string MMU::Read(int Handle, int offset, int size) {
   string return_string;
   for (int i = TheBlock->base + offset; i < TheBlock->base + offset + size;
        i++) {
-    return_string += (&Memory[i]);
+    return_string += Memory[i];
   }
 
   SemaphorePtr->up();
@@ -590,8 +588,7 @@ string MMU::Dump_A_Block(int Handle) {
   ss << " Base: " << TheBlock->base << endl;
   ss << " Limit: " << TheBlock->limit << endl;
   ss << " Read: " << TheBlock->read << endl;
-  ss << " Write: " << TheBlock->write << endl;
-  ss << " Empty: " << TheBlock->empty << "\n" << endl;
+  ss << " Write: " << TheBlock->write << "\n" << endl;
 
   for (int i = TheBlock->base; i < TheBlock->limit; i++) {
     ss << Memory[i];
@@ -628,8 +625,7 @@ string MMU::Dump_Blocks() {
     ss << " Base: " << TheBlock->base << endl;
     ss << " Limit: " << TheBlock->limit << endl;
     ss << " Read: " << TheBlock->read << endl;
-    ss << " Write: " << TheBlock->write << endl;
-    ss << " Empty: " << TheBlock->empty << "\n" << endl;
+    ss << " Write: " << TheBlock->write << "\n" << endl;
 
     for (int i = TheBlock->base; i < TheBlock->limit; i++) {
       ss << Memory[i];

@@ -56,13 +56,15 @@ using namespace std;
  * 1. static inline MMU *MMU_Ptr;
  *    - A pointer to the MMU.
  *    - MMU is Singleton. Only one may exist. Controlled by MMU *Get_Instance().
- * 2. char Memory[1024];
+ * 2. Semaphore *SemaphorePtr;
+ *    - A pointer to the Memory Semaphore.
+ * 3. char Memory[1024];
  *    - The bytes of memory available to Ultima 2.0
- * 3. int Free_Memory;
+ * 4. int Free_Memory;
  *    - A counter for the available memory.
- * 4. int Next_Handle;
+ * 5. int Next_Handle;
  *    - A counter for which handle is available for assignment.
- * 5. list<Block *> Blocks;
+ * 6. list<Block *> Blocks;
  *    - A list that contains each block.
  *      This is the linked list for free/used memory blocks.
  *
@@ -110,9 +112,7 @@ private:
    *    - A read pointer, for reading from memory sequentially.
    * 5. int write;
    *    - A write pointer, for writing to memory sequentially.
-   * 6. bool empty;
-   *    - A bool for if the block is empty or not.
-   * 7. pthread_t owner;
+   * 6. pthread_t owner;
    *    - Stores the ID of the owning task.
    *      Allows comparison checks and prevents unauthorized access.
    *
@@ -122,7 +122,6 @@ private:
    */
   struct Block {
     int handle, base, limit, read, write;
-    bool empty;
     pthread_t owner;
 
     Block();
