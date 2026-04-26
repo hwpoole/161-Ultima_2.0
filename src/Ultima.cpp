@@ -467,6 +467,51 @@ void *consumer(void *args) {
   return (NULL);
 }
 
+/* void *use_mmu(void *arg) {...}
+ *
+ * This is a demo method to use the Memory Management Unit.
+ */
+void *use_mmu(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int read, write, handle;
+  string read_string, write_string;
+
+  sprintf(buffer, " %s wants to read\n", Context->name);
+  write_window(Context->win, buffer);
+
+  read = MMUPtr->Read(handle);
+  if (read == -1) {
+    sprintf(buffer, " ERROR! Can't read\n I forgot to Alloc()...\n");
+    write_window(Context->win, buffer);
+
+    SchedulerPtr->yield();
+  } else {
+    sprintf(buffer, " %s read %c\n", Context->name, read);
+    write_window(Context->win, buffer);
+
+    SchedulerPtr->yield();
+  }
+
+  sprintf(buffer, " %s Alloc()'s 10,000\n", Context->name);
+  write_window(Context->win, buffer);
+
+  handle = MMUPtr->Alloc(10000);
+  if (handle == -1) {
+    sprintf(buffer, " ERROR! Can't Alloc()\n Guess that's too much?\n");
+    write_window(Context->win, buffer);
+
+    SchedulerPtr->yield();
+  } else {
+    sprintf(buffer, " %s was successful!\n", Context->name);
+    write_window(Context->win, buffer);
+
+    SchedulerPtr->yield();
+  }
+
+  return (NULL);
+}
+
 //---------------Orchestration----------------------------------------
 
 /* void *console(void *arg) {...}
@@ -481,6 +526,7 @@ void *consumer(void *args) {
  *    - '1' for scenario 1.
  *    - '2' for scenario 2.
  *    - '3' for scenario 3.
+ *    - '4' for scenario 4.
  *    - 'p' for Pause.
  *        - 'r' for Resume.
  *    - 'h' for Help.
@@ -541,9 +587,11 @@ void *console(void *args) {
     case '4': { // Scenario 4 - Tasks use Memory Management Unit.
       write_window(Log_Win, " Scenario 4: Threads use MMU\n");
 
-      // ut.create(&Task1, use_mmu, T1);
-      // ut.create(&Task2, use_mmu, T2);
-      // ut.create(&Task3, use_mmu, T3);
+      ut.create(&Task1, use_mmu, T1);
+      ut.create(&Task2, use_mmu, T2);
+      ut.create(&Task3, use_mmu, T3);
+
+      break;
     }
     case 'p': { // PAUSE the Scenarios
       write_window(Log_Win, " PAUSED: 'r' TO RESUME\n");
@@ -604,22 +652,22 @@ int main() {
   // Initializes the ncurses screen.
   initscr();
 
-  Heading_Win = newwin(10, 80, 3, 2);
+  Heading_Win = newwin(10, 81, 3, 2);
   box(Heading_Win, 0, 0);
   mvwprintw(Heading_Win, 2, 28, "161-ULTIMA 2.0 PHASE 2 DEMO");
   mvwprintw(Heading_Win, 4, 2, "Press 'h' to view the scenarios.");
   mvwprintw(Heading_Win, 5, 2, "Press 'q' or Crtl-C to exit the program.");
   wrefresh(Heading_Win);
 
-  Log_Win = create_window(10, 60, 28, 2);
-  Console_Win = create_window(10, 20, 28, 62);
+  Log_Win = create_window(10, 61, 28, 2);
+  Console_Win = create_window(10, 20, 28, 63);
   Task1_Win = create_window(15, 27, 13, 2);
-  Task2_Win = create_window(15, 26, 13, 29);
-  Task3_Win = create_window(15, 27, 13, 55);
-  Sched_Win = create_window(8, 40, 3, 82);
-  Sema_Win = create_window(5, 40, 11, 82);
-  Pipe_Win = create_window(9, 40, 16, 82);
-  MMU_Win = create_window(52, 92, 25, 82);
+  Task2_Win = create_window(15, 27, 13, 29);
+  Task3_Win = create_window(15, 27, 13, 56);
+  Sched_Win = create_window(8, 40, 3, 83);
+  Sema_Win = create_window(5, 40, 11, 83);
+  Pipe_Win = create_window(9, 40, 16, 83);
+  MMU_Win = create_window(52, 92, 25, 83);
   write_defaults();
 
   cbreak();
