@@ -2,7 +2,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <ostream>
 #include <pthread.h>
+#include <sstream>
 
 MMU::Block::Block() {
   handle = -1;
@@ -337,4 +339,89 @@ int MMU::Mem_Write(int Handle, int offset, char *text) {
   }
 
   return 1;
+}
+
+/* string Dump_A_Block(int Handle) {...}
+ *
+ * Dumps a specific block identified by its handle.
+ *
+ * 1. Check that handle is in range.
+ * 2. Find a block with the matching handle.
+ * 3. Check that we found the proper block by handle.
+ * 4. Make a string stream, and define line length 'limit'.
+ * 5. Dump all contents into string stream.
+ * 6. Return string stream as string.
+ */
+string MMU::Dump_A_Block(int Handle) {
+  if (Handle < 0 || Handle > 16) {
+    return "";
+  }
+
+  Block *TheBlock;
+  for (Block *block : Blocks) {
+    TheBlock = block;
+
+    if (TheBlock->handle == Handle) {
+      break;
+    }
+  }
+
+  if (TheBlock->handle != Handle) {
+    return "";
+  }
+
+  stringstream ss;
+  int limit = 10;
+
+  ss << " ---------- Block " << Handle << " ---------- " << endl;
+  ss << " Owner: " << TheBlock->owner << endl;
+  ss << " Base: " << TheBlock->base << endl;
+  ss << " Limit: " << TheBlock->limit << endl;
+  ss << " Read: " << TheBlock->read << endl;
+  ss << " Write: " << TheBlock->write << endl;
+  ss << " Empty: " << TheBlock->empty << "\n" << endl;
+
+  for (int i = TheBlock->base; i < TheBlock->limit; i++) {
+    ss << Memory[i];
+    if ((i + 1) % limit == 0) {
+      ss << endl;
+    }
+  }
+
+  return ss.str();
+}
+
+/* string Dump_Blocks() {...}
+ *
+ * Dumps all blocks, in the order they appear in Blocks.
+ *
+ * 1. For each block, dump all contents into a string stream.
+ * 2. Return string stream as string.
+ */
+string MMU::Dump_Blocks() {
+  stringstream ss;
+  int limit = 10;
+
+  Block *TheBlock;
+  for (Block *block : Blocks) {
+    TheBlock = block;
+
+    ss << " ---------- Block " << TheBlock->handle << " ---------- " << endl;
+    ss << " Owner: " << TheBlock->owner << endl;
+    ss << " Base: " << TheBlock->base << endl;
+    ss << " Limit: " << TheBlock->limit << endl;
+    ss << " Read: " << TheBlock->read << endl;
+    ss << " Write: " << TheBlock->write << endl;
+    ss << " Empty: " << TheBlock->empty << "\n" << endl;
+
+    for (int i = TheBlock->base; i < TheBlock->limit; i++) {
+      ss << Memory[i];
+      if ((i + 1) % limit == 0) {
+        ss << endl;
+      }
+    }
+    ss << "\n" << endl;
+  }
+
+  return ss.str();
 }

@@ -38,4 +38,8 @@ public:
   string Mem_Read(int Handle, int offset, int size);
 
   int Mem_Write(int Handle, int offset, char *text);
+
+  string Dump_A_Block(int Handle);
+
+  string Dump_Blocks();
 };
