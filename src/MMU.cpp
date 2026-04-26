@@ -331,7 +331,6 @@ int MMU::Free(int Handle) {
   DeadBlock->write = DeadBlock->base;
   DeadBlock->read = DeadBlock->base;
   *it = DeadBlock;
-  Next_Handle--;
   Free_Memory += DeadBlock->limit - DeadBlock->base + 1;
 
   MMU::Coalesce();
