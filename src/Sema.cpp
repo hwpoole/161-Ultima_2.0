@@ -10,7 +10,6 @@
  */
 
 #include "Sema.h"
-#include "Kernel.h"
 #include <iostream>
 #include <pthread.h>
 #include <queue>
@@ -27,12 +26,6 @@ Scheduler *Semaphore::scheduler = nullptr;
  * Copies *Name into resource_name.
  */
 Semaphore::Semaphore(const char *Name) { resource_name = Name; }
-
-/* Semaphore::~Semaphore() {...}
- *
- * Destructor.
- */
-Semaphore::~Semaphore() {}
 
 /* void Semaphore::down() {...}
  *
