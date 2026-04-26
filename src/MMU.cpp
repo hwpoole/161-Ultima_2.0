@@ -97,44 +97,55 @@ int MMU::Largest() {
 
 /* void Coalesce() {...}
  *
- * Finds all empty blocks, deletes them, and reconstructs them at the end of
- * Blocks.
+ * Rebuilds Blocks with all used blocks in order at the beginning, and all empty
+ * space at the end. Modifies Memory[] to have all used space in the same order.
  *
- * 1. Search for empty blocks.
- *    1a. If empty block found...
- *        a. Make an iterator for it.
- *        b. Push that interator onto a list of iterators.
- *        c. Take its size and add it to total_size.
- * 2. For each iterator...
- *    2a. Delete its block from the list.
- * 3. Make a new block after the current end.
- * 4. Set that block's size to be total_size.
- * 5. Push it onto the list of blocks.
+ * 1. For each block:
+ *    1a. If assigned...
+ *        a. Get its size and an offset from the current address.
+ *        b. Move its contents in memory.
+ *        c. Update the block.
+ *        d. Push it onto a new Block list.
+ *    1b. Else...
+ *        a. Delete the block.
+ * 2. If the next address is not at the end of memory...
+ *    2a. Make a new block for the empty contents.
+ *    2b. Fill it with '.'
+ *    2c. Push it onto a new Block list.
+ * 3. Replace Blocks with the new Block list.
  */
 void MMU::Coalesce() {
-  list<_List_iterator<MMU::Block *>> Positions;
-  int total_size = 0;
+  list<Block *> NewBlocks;
+  int next_address = 0;
 
   for (Block *block : Blocks) {
-    if (block->owner == -1) {
-      _List_iterator<MMU::Block *> it =
-          find(Blocks.begin(), Blocks.end(), block);
-      Positions.push_back(it);
+    if (block->owner != -1) {
+      int size = block->limit - block->base + 1;
+      int offset = next_address - block->base;
+      memmove(&Memory[next_address], &Memory[block->base], size);
 
-      total_size += block->limit - block->base;
+      block->base = next_address;
+      block->limit = next_address + size - 1;
+      block->read += offset;
+      block->write += offset;
+
+      NewBlocks.push_back(block);
+      next_address += size;
+    } else {
+      delete block;
     }
   }
 
-  for (_List_iterator<MMU::Block *> iterator : Positions) {
-    Blocks.erase(iterator);
+  if (next_address < 1024) {
+    Block *Empty = new Block();
+    Empty->base = next_address;
+    Empty->limit = 1023;
+
+    memset(&Memory[next_address], '.', 1024 - next_address);
+    NewBlocks.push_back(Empty);
   }
 
-  Block *CurrentEnd = Blocks.back();
-  Block *NewEmpty;
-  NewEmpty->base = CurrentEnd->limit + 1;
-  NewEmpty->limit = NewEmpty->base + total_size;
-
-  Blocks.push_back(NewEmpty);
+  Blocks = NewBlocks;
 }
 
 /* int Smallest() {...}
