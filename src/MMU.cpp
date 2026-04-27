@@ -223,7 +223,11 @@ MMU *MMU::Get_Instance() {
 int MMU::Alloc(int Size) {
   SemaphorePtr->down();
   // Check if there is enough free memory.
-  if (Free_Memory < Size) {
+  if (Free_Memory < Size && Size <= 1024) {
+    SemaphorePtr->down();
+    SemaphorePtr->up();
+    return -1;
+  } else if (Size > 1024) {
     SemaphorePtr->up();
     return -1;
   }

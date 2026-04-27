@@ -474,7 +474,7 @@ void *consumer(void *args) {
 void *use_mmu(void *args) {
   TaskContext *Context = (TaskContext *)args;
   char buffer[256];
-  int read, write, handle;
+  int read, write, handle, free_mem;
   string read_string, write_string;
 
   sprintf(buffer, " %s wants to read\n", Context->name);
@@ -562,6 +562,20 @@ void *use_mmu(void *args) {
     sprintf(buffer, " Success! Read %c\n\n", read);
     write_window(Context->win, buffer);
   }
+
+  sprintf(buffer, " %s frees memory\n", Context->name);
+  free_mem = MMUPtr->Free(handle);
+  write_window(Context->win, buffer);
+  if (free_mem != -1) {
+    write_window(Context->win, " Success.\n\n");
+    SchedulerPtr->yield();
+  } else {
+    write_window(Context->win, " Failure.\n\n");
+    SchedulerPtr->yield();
+  }
+
+  wclear(MMU_Win);
+  write_window(Context->win, " Compete for space.\n");
 
   return (NULL);
 }
