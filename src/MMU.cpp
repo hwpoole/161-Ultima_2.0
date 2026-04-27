@@ -50,6 +50,7 @@ MMU::MMU() {
 
   SemaphorePtr = Kernel::Get_Instance()->Create_Semaphore("Memory Semaphore");
   SchedulerPtr = Kernel::Get_Instance()->Get_Scheduler();
+  SemaphorePtr->set_scheduler(SchedulerPtr);
 }
 
 /* ~MMU() {...}
@@ -223,11 +224,7 @@ MMU *MMU::Get_Instance() {
 int MMU::Alloc(int Size) {
   SemaphorePtr->down();
   // Check if there is enough free memory.
-  if (Free_Memory < Size && Size <= 1024) {
-    SemaphorePtr->down();
-    SemaphorePtr->up();
-    return -1;
-  } else if (Size > 1024) {
+  if (Free_Memory < Size) {
     SemaphorePtr->up();
     return -1;
   }
@@ -623,8 +620,6 @@ string MMU::Dump_Blocks() {
   stringstream ss;
   int limit = 90;
 
-  ss << " ---------- Memory Semaphore ---------- " << endl;
-  ss << SemaphorePtr->dump() << endl;
   Block *TheBlock = nullptr;
   for (Block *block : Blocks) {
     TheBlock = block;

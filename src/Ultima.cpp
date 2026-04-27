@@ -576,6 +576,46 @@ void *use_mmu(void *args) {
 
   wclear(MMU_Win);
   write_window(Context->win, " Compete for space.\n");
+  SchedulerPtr->yield();
+
+  sprintf(buffer, " %s wants 800 bytes.\n", Context->name);
+  write_window(Context->win, buffer);
+
+  handle = -1;
+  SemaphorePtr->down();
+  while (handle == -1) {
+    handle = MMUPtr->Alloc(800);
+    SchedulerPtr->yield();
+  }
+  write_window(Context->win, buffer);
+  if (handle != -1) {
+    write_window(Context->win, " Success!\n");
+
+    for (int i = 0; i < 5; i++) {
+      MMUPtr->Write(handle, ('a' + rand() % 26));
+      write_window(Context->win, " Working...\n");
+    }
+
+    for (int i = 0; i < 5; i++) {
+      MMUPtr->Read(handle);
+    }
+    write_window(Context->win, "\n");
+
+    sprintf(buffer, " %s Frees memory\n", Context->name);
+    free_mem = MMUPtr->Free(handle);
+    write_window(Context->win, buffer);
+    if (free_mem != -1) {
+      write_window(Context->win, " Success!\n\n");
+    } else {
+      write_window(Context->win, " Failure.\n\n");
+    }
+
+    SemaphorePtr->up();
+    SchedulerPtr->yield();
+  } else {
+    write_window(Context->win, " Failure.\n\n");
+    SchedulerPtr->yield();
+  }
 
   return (NULL);
 }
@@ -735,7 +775,7 @@ int main() {
   Sched_Win = create_window(8, 40, 3, 83);
   Sema_Win = create_window(5, 40, 11, 83);
   Pipe_Win = create_window(9, 40, 16, 83);
-  MMU_Win = create_window(55, 92, 25, 83);
+  MMU_Win = create_window(25, 92, 25, 83);
   write_defaults();
 
   cbreak();
