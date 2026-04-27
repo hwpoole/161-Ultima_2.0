@@ -467,15 +467,32 @@ void *consumer(void *args) {
   return (NULL);
 }
 
-/* void *use_mmu(void *arg) {...}
+/* void tasks_try_to_read_without_alloc(void *args) {...}
  *
- * This is a demo method to use the Memory Management Unit.
+ * A helper method for Scenario 4.
+ *
+ * In this sub-scenario, each task will try to read memory, without first
+ * allocating it. We expect them to fail.
+ *
+ * We recall that we made a mistake in programming this sub-scenario, and print
+ * that out for the user...
+ *
+ * 1. Extract args into TaskContext *Context.
+ * 2. Get a buffer.
+ * 3. Declare ints read, handle.
+ * 4. Try to read.
+ * 5. Check if Read() return value is -1.
+ *    5a. If so, we successfully failed.
+ *    5b. Print that.
+ * 6. Else...
+ *    6a. We failed at failing.
+ *    6b. Print that.
+ * 7. Yield.
  */
-void *use_mmu(void *args) {
+void tasks_try_to_read_without_alloc(void *args) {
   TaskContext *Context = (TaskContext *)args;
   char buffer[256];
-  int read, write, handle, free_mem;
-  string read_string, write_string;
+  int read, handle;
 
   sprintf(buffer, " %s wants to read\n", Context->name);
   write_window(Context->win, buffer);
@@ -483,14 +500,38 @@ void *use_mmu(void *args) {
   if (read == -1) {
     sprintf(buffer, " ERROR! Can't read\n I forgot to Alloc()...\n\n");
     write_window(Context->win, buffer);
-
-    SchedulerPtr->yield();
   } else {
     sprintf(buffer, " %s read %c\n", Context->name, read);
     write_window(Context->win, buffer);
-
-    SchedulerPtr->yield();
   }
+
+  SchedulerPtr->yield();
+}
+
+/* void tasks_alloc_10000(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * In this sub-scenario, the programmer of each task is unsure of how many bytes
+ * they will need, so they just try and allocate 10,000 bytes, figuring that
+ * will be enough for their purposes.
+ *
+ * 1. Extract args into TaskContext *Context.
+ * 2. Get a buffer.
+ * 3. Declare int handle.
+ * 4. Try to alloc 10,000 bytes.
+ * 5. Check return value of Alloc(10000)
+ *    5a. If -1, we failed successfully.
+ *    5b. Print that.
+ * 6. Else...
+ *    6a. We failed at failing.
+ *    6b. Print that.
+ * 7. Yield.
+ */
+void tasks_alloc_10000(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int handle;
 
   sprintf(buffer, " %s Alloc()'s 10,000\n", Context->name);
   write_window(Context->win, buffer);
@@ -498,50 +539,32 @@ void *use_mmu(void *args) {
   if (handle == -1) {
     sprintf(buffer, " ERROR! Can't Alloc()\n Guess that's too much?\n\n");
     write_window(Context->win, buffer);
-
-    SchedulerPtr->yield();
   } else {
     sprintf(buffer, " %s was successful!\n", Context->name);
     write_window(Context->win, buffer);
-
-    SchedulerPtr->yield();
   }
 
-  sprintf(buffer, " %s Alloc()'s 64\n", Context->name);
-  handle = MMUPtr->Alloc(64);
-  write_window(Context->win, buffer);
-  if (handle != -1) {
-    write_window(Context->win, " Success!\n");
-    SchedulerPtr->yield();
-  } else {
-    write_window(Context->win, " Failure.\n");
-    SchedulerPtr->yield();
-  }
+  SchedulerPtr->yield();
+}
 
-  char rand_char = ('a' + rand()) % 26;
-  sprintf(buffer, " %s writes %c\n", Context->name, rand_char);
-  write = MMUPtr->Write(handle, rand_char);
-  write_window(Context->win, buffer);
-  if (write != -1) {
-    write_window(Context->win, " Success!\n");
-    SchedulerPtr->yield();
-  } else {
-    write_window(Context->win, " Failure.\n");
-    SchedulerPtr->yield();
-  }
-
-  sprintf(buffer, " %s reads memory\n", Context->name);
-  read = MMUPtr->Read(handle);
-  write_window(Context->win, buffer);
-  if (read != -1) {
-    sprintf(buffer, " Success! Read %c\n", read);
-    write_window(Context->win, buffer);
-    SchedulerPtr->yield();
-  } else {
-    sprintf(buffer, " Failure.\n");
-    write_window(Context->win, buffer);
-    SchedulerPtr->yield();
-  }
+/* void kill_time_for_inspection(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * This method just exists to *visibly* kill time.
+ * In this way, we let the user know we are waiting for them and giving them a
+ * second to look around.
+ *
+ * 1. Extract args into TaskContext *Context.
+ * 2. Get a buffer.
+ * 3. Do this five times:
+ *    3a. Write " pause for inspection...\n"
+ * 4. Yield.
+ * 5. Write " Continue tests...\n\n"
+ */
+void kill_time_for_inspection(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
 
   // Allow user time to inspect memory condition.
   write_window(Context->win, "\n");
@@ -551,6 +574,12 @@ void *use_mmu(void *args) {
   write_window(Context->win, "\n");
   SchedulerPtr->yield();
   write_window(Context->win, " Continue tests...\n\n");
+}
+
+void tasks_read_bad_blocks(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int read;
 
   sprintf(buffer, " %s reads another thread's block\n", Context->name);
   read = MMUPtr->Read(-1);
@@ -562,19 +591,144 @@ void *use_mmu(void *args) {
     sprintf(buffer, " Success! Read %c\n\n", read);
     write_window(Context->win, buffer);
   }
+}
+
+/* void tasks_alloc_and_write_and_read(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * In this sub-scenario, each task will alloc 64 bytes, write a random char to
+ * them, read them, attempt to read someone else's memory, then free their
+ * blocks.
+ *
+ * 1.  Extract args into TaskContext *Context.
+ * 2.  Get a buffer.
+ * 3.  Declare ints read, write, handle, free_mem.
+ * 4.  Alloc 64, and check the return value.
+ *     4a. If anything but -1, Alloc() gave us a block.
+ *         a. Print success.
+ *     4b. Else,
+ *         a. Print failure.
+ * 5.  Yield.
+ * 6.  Write a random char to the memory block by handle.
+ * 7.  Check the return value of Write().
+ *     7a. If anything but -1, Write() was successful.
+ *         a. Print that.
+ *     7b. Else,
+ *         a. Print failure.
+ * 8.  Yield.
+ * 9.  Read a char from memory by handle.
+ * 10. Check the return value of Read().
+ *     10a. If anything but -1, Read() was successful.
+ *          a. Print that.
+ *     10b. Else,
+ *          a. Print failure.
+ * 11. Call tasks_read_bad_blocks(args);
+ * 12. Free memory.
+ * 13. Check return value of Free().
+ *     13a. If anything but -1, Free() was successful.
+ *          a. Print that.
+ *     13b. Else,
+ *          b. Print failure.
+ * 14. Yield.
+ */
+void tasks_alloc_and_write_and_read(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int read, write, handle, free_mem;
+
+  sprintf(buffer, " %s Alloc()'s 64\n", Context->name);
+  handle = MMUPtr->Alloc(64);
+  write_window(Context->win, buffer);
+  if (handle != -1) {
+    write_window(Context->win, " Success!\n");
+  } else {
+    write_window(Context->win, " Failure.\n");
+  }
+
+  SchedulerPtr->yield();
+
+  char rand_char = ('a' + rand()) % 26;
+  sprintf(buffer, " %s writes %c\n", Context->name, rand_char);
+  write = MMUPtr->Write(handle, rand_char);
+  write_window(Context->win, buffer);
+  if (write != -1) {
+    write_window(Context->win, " Success!\n");
+  } else {
+    write_window(Context->win, " Failure.\n");
+  }
+
+  SchedulerPtr->yield();
+
+  sprintf(buffer, " %s reads memory\n", Context->name);
+  read = MMUPtr->Read(handle);
+  write_window(Context->win, buffer);
+  if (read != -1) {
+    sprintf(buffer, " Success! Read %c\n\n", read);
+    write_window(Context->win, buffer);
+  } else {
+    sprintf(buffer, " Failure.\n\n");
+    write_window(Context->win, buffer);
+  }
+
+  SchedulerPtr->yield();
+  tasks_read_bad_blocks(args);
 
   sprintf(buffer, " %s frees memory\n", Context->name);
   free_mem = MMUPtr->Free(handle);
   write_window(Context->win, buffer);
   if (free_mem != -1) {
     write_window(Context->win, " Success.\n\n");
-    SchedulerPtr->yield();
   } else {
     write_window(Context->win, " Failure.\n\n");
-    SchedulerPtr->yield();
   }
 
-  wclear(MMU_Win);
+  SchedulerPtr->yield();
+}
+
+/* void tasks_compete_for_800(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * In this sub-scenario, each task races against the others to allocate 800
+ * bytes, which we know is most of our available memory...
+ * Since we are working with a strictly cooperative scheduler, we know that
+ * Task1 will go first and get it, then Task2 and Task 3 will be blocked by the
+ * Semaphore. After Task1 is done, Task2 will grab 800 bytes, and so on.
+ *
+ * However, this sub-scenario is not designed with that intimate knowledge
+ * Scheduler. In this case, all tasks must call down on the Semaphore and wait
+ * their turn.
+ *
+ * 1.  Extract args into TaskContext *Context.
+ * 2.  Get a buffer.
+ * 3.  Declare ints handle, read, write, free_mem.
+ * 4.  Write the sub-scenario's goals.
+ *     4a. Yield.
+ * 5.  Set handle = -1 to let While loop run.
+ * 6.  Call down() on Semaphore.
+ * 7.  While handle is -1, try to allocate 800 bytes.
+ *     7a. Then, yield.
+ * 8.  If handle is not -1, we have the block.
+ *     8a. Write that we succeeded.
+ *     8b. Print 5 chars to the block, and inform the user.
+ *     8c. Read all chars just to clear the block.
+ *     8d. Free the memory.
+ *     8e. Check the return value of Free().
+ *         a. If anything other than -1, Free() succeeded.
+ *            1. Print that.
+ *         b. Else,
+ *            1. Print failure.
+ * 9.  Else...
+ *     9a. Print failure.
+ * 10. Call up() on Semaphore.
+ * 11. yield.
+ */
+void tasks_compete_for_800(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int handle, read, write, free_mem;
+
   write_window(Context->win, " Compete for space.\n");
   SchedulerPtr->yield();
 
@@ -609,13 +763,35 @@ void *use_mmu(void *args) {
     } else {
       write_window(Context->win, " Failure.\n\n");
     }
-
-    SemaphorePtr->up();
-    SchedulerPtr->yield();
   } else {
     write_window(Context->win, " Failure.\n\n");
-    SchedulerPtr->yield();
   }
+  SemaphorePtr->up();
+  SchedulerPtr->yield();
+}
+
+/* void *use_mmu(void *arg) {...}
+ *
+ * This is a demo method to use the Memory Management Unit.
+ * This method immediately calls the four helper methods, which are the
+ * sub-scenarios for this scenario.
+ *
+ * 1. Read without alloc. (fails)
+ * 2. Alloc 10,000 bytes. (fails).
+ * 3. Alloc and write/read. (works - but can only read your own block).
+ * 4. Compete for space. (works - but tasks are put in queue for space).
+ */
+void *use_mmu(void *args) {
+
+  tasks_try_to_read_without_alloc(args);
+
+  tasks_alloc_10000(args);
+
+  tasks_alloc_and_write_and_read(args);
+
+  wclear(MMU_Win);
+
+  tasks_compete_for_800(args);
 
   return (NULL);
 }
