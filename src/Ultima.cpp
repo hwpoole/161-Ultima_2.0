@@ -634,3 +634,87 @@ int main() {
 
   return 0;
 }
+//Scenerio 4
+case '4':
+    Start_MMU_Scenario();
+  #include "MMU.h"
+
+// forward declarations
+void Task1_MMU();
+void Task2_MMU();
+void Task3_MMU();
+
+void Start_MMU_Scenario() {
+    printw("\nStarting MMU Scenario...\n");
+
+    // REPLACE create_uthread with the actual function used in your file
+    create_uthread(Task1_MMU);
+    create_uthread(Task2_MMU);
+    create_uthread(Task3_MMU);
+}
+void Task1_MMU() {
+    MMU* memory = MMU::Get_Instance();
+
+    printw("Task1: read empty memory\n");
+    int r = memory->Read(1);
+    if (r == -1) printw("Task1: read failed as expected\n");
+
+    yield();
+
+    int h1 = memory->Alloc(50);
+    printw("Task1: allocated %d\n", h1);
+
+    yield();
+
+    memory->Write(h1, 'A');
+    memory->Write(h1, 'B');
+
+    yield();
+
+    int val = memory->Read(h1);
+    printw("Task1: read %c\n", (char)val);
+
+    yield();
+
+    memory->Free(h1);
+    printw("Task1: freed memory\n");
+}
+
+void Task2_MMU() {
+    MMU* memory = MMU::Get_Instance();
+
+    yield();
+
+    int h2 = memory->Alloc(100);
+    printw("Task2: allocated %d\n", h2);
+
+    yield();
+
+    int fail = memory->Alloc(5000);
+    printw("Task2: allocation fail = %d\n", fail);
+
+    yield();
+
+    memory->Free(h2);
+    printw("Task2: freed memory\n");
+}
+
+void Task3_MMU() {
+    MMU* memory = MMU::Get_Instance();
+
+    yield();
+
+    int h3 = memory->Alloc(200);
+    printw("Task3: allocated %d\n", h3);
+
+    yield();
+
+    int fail = memory->Alloc(900);
+    printw("Task3: over-allocation fail = %d\n", fail);
+
+    yield();
+
+    memory->Free(h3);
+    printw("Task3: freed memory\n");
+}
+    break;
