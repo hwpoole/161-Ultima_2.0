@@ -576,6 +576,26 @@ void kill_time_for_inspection(void *args) {
   write_window(Context->win, " Continue tests...\n\n");
 }
 
+/* void tasks_read_bad_blocks(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * In this sub-scenario, each task will try to read a block by a known bad
+ * handle. We expect them to fail.
+ *
+ * 1. Extract args into TaskContext *Context.
+ * 2. Get a buffer.
+ * 3. Declare int read.
+ * 4. Read by a known bad handle.
+ * 5. Check the return value of Read().
+ *    5a. If -1...
+ *        a. We failed successfully.
+ *        b. Print that.
+ *    5b. Else,
+ *        a. We failed at failing.
+ *        b. Print that.
+ * 6. Yield.
+ */
 void tasks_read_bad_blocks(void *args) {
   TaskContext *Context = (TaskContext *)args;
   char buffer[256];
@@ -586,11 +606,11 @@ void tasks_read_bad_blocks(void *args) {
   write_window(Context->win, buffer);
   if (read == -1) {
     write_window(Context->win, " Failure.\n\n");
-    SchedulerPtr->yield();
   } else {
     sprintf(buffer, " Success! Read %c\n\n", read);
     write_window(Context->win, buffer);
   }
+  SchedulerPtr->yield();
 }
 
 /* void tasks_alloc_and_write_and_read(void *args) {...}
