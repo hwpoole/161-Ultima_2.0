@@ -17,9 +17,15 @@
  *      - Threads that can't get access to the resource will wait in a FIFO
  *        queue until they are called on.
  *      - This is a blocking wait, but is not a busy wait.
- *  5. void up();
+ *  5. void down_if();
+ *      - Allows a thread to volunteer itself to the semaphore queue if a
+ *        condition is met.
+ *      - Threads that can't get access to the resource will wait in the same
+ *        FIFO queue as down();
+ *      - Blocking, but not busy wait.
+ *  6. void up();
  *      - Call this to unlock the guarded resource for use by other threads.
- *  6. string dump();
+ *  7. string dump();
  *      - Call this to see the current contents and/or state of the Semaphore.
  *
  *
@@ -66,6 +72,8 @@ public:
   static void set_scheduler(Scheduler *s) { scheduler = s; }
 
   void down();
+
+  void down_if(bool condition);
 
   void up();
 
