@@ -481,7 +481,7 @@ void *use_mmu(void *args) {
   write_window(Context->win, buffer);
   read = MMUPtr->Read(handle);
   if (read == -1) {
-    sprintf(buffer, " ERROR! Can't read\n I forgot to Alloc()...\n");
+    sprintf(buffer, " ERROR! Can't read\n I forgot to Alloc()...\n\n");
     write_window(Context->win, buffer);
 
     SchedulerPtr->yield();
@@ -496,7 +496,7 @@ void *use_mmu(void *args) {
   write_window(Context->win, buffer);
   handle = MMUPtr->Alloc(10000);
   if (handle == -1) {
-    sprintf(buffer, " ERROR! Can't Alloc()\n Guess that's too much?\n");
+    sprintf(buffer, " ERROR! Can't Alloc()\n Guess that's too much?\n\n");
     write_window(Context->win, buffer);
 
     SchedulerPtr->yield();
@@ -511,7 +511,55 @@ void *use_mmu(void *args) {
   handle = MMUPtr->Alloc(64);
   write_window(Context->win, buffer);
   if (handle != -1) {
-    sprintf(buffer, " Success!\n");
+    write_window(Context->win, " Success!\n");
+    SchedulerPtr->yield();
+  } else {
+    write_window(Context->win, " Failure.\n");
+    SchedulerPtr->yield();
+  }
+
+  char rand_char = ('a' + rand()) % 26;
+  sprintf(buffer, " %s writes %c\n", Context->name, rand_char);
+  write = MMUPtr->Write(handle, rand_char);
+  write_window(Context->win, buffer);
+  if (write != -1) {
+    write_window(Context->win, " Success!\n");
+    SchedulerPtr->yield();
+  } else {
+    write_window(Context->win, " Failure.\n");
+    SchedulerPtr->yield();
+  }
+
+  sprintf(buffer, " %s reads memory\n", Context->name);
+  read = MMUPtr->Read(handle);
+  write_window(Context->win, buffer);
+  if (read != -1) {
+    sprintf(buffer, " Success! Read %c\n", read);
+    write_window(Context->win, buffer);
+    SchedulerPtr->yield();
+  } else {
+    sprintf(buffer, " Failure.\n");
+    write_window(Context->win, buffer);
+    SchedulerPtr->yield();
+  }
+
+  // Allow user time to inspect memory condition.
+  write_window(Context->win, "\n");
+  for (int i = 0; i < 5; i++) {
+    write_window(Context->win, " pause for inspection...\n");
+  }
+  write_window(Context->win, "\n");
+  SchedulerPtr->yield();
+  write_window(Context->win, " Continue tests...\n\n");
+
+  sprintf(buffer, " %s reads another thread's block\n", Context->name);
+  read = MMUPtr->Read(-1);
+  write_window(Context->win, buffer);
+  if (read == -1) {
+    write_window(Context->win, " Failure.\n\n");
+    SchedulerPtr->yield();
+  } else {
+    sprintf(buffer, " Success! Read %c\n\n", read);
     write_window(Context->win, buffer);
   }
 

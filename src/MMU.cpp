@@ -272,6 +272,8 @@ int MMU::Alloc(int Size) {
     Block *NewBlock = new Block;
     NewBlock->base = Orphan->base;
     NewBlock->limit = NewBlock->base + (ceil((double)Size / 64.0) * 64) - 1;
+    NewBlock->read = NewBlock->base;
+    NewBlock->write = NewBlock->base;
     NewBlock->owner = SchedulerPtr->get_task_id();
     NewBlock->handle = Next_Handle++;
 
@@ -289,6 +291,8 @@ int MMU::Alloc(int Size) {
     int pos = distance(begin(Blocks), it);
     Orphan->owner = SchedulerPtr->get_task_id();
     Orphan->handle = Next_Handle++;
+    Orphan->read = Orphan->base;
+    Orphan->write = Orphan->base;
     *it = Orphan;
 
     Free_Memory -= (Orphan->limit - Orphan->base + 1);
@@ -621,24 +625,29 @@ string MMU::Dump_Blocks() {
   for (Block *block : Blocks) {
     TheBlock = block;
 
-    ss << " ---------- Block " << TheBlock->handle << " ---------- " << endl;
-    ss << " Owner: " << TheBlock->owner << endl;
-    ss << " Base: " << TheBlock->base << endl;
-    ss << " Limit: " << TheBlock->limit << endl;
-    ss << " Read: " << TheBlock->read << endl;
-    ss << " Write: " << TheBlock->write << endl;
+    if (TheBlock->handle == -1) {
+      ss << " Free space: " << Free_Memory << "\n" << endl;
+    } else {
 
-    int size = TheBlock->limit - TheBlock->base + 1;
-    int found = 0;
-    for (int i = TheBlock->base; i <= TheBlock->limit; i++) {
-      ss << Memory[i];
-      if ((i - TheBlock->base + 1) % limit == 0) {
-        ss << endl;
+      ss << " ---------- Block " << TheBlock->handle << " ---------- " << endl;
+      ss << " Owner: " << TheBlock->owner << endl;
+      ss << " Base: " << TheBlock->base << endl;
+      ss << " Limit: " << TheBlock->limit << endl;
+      ss << " Read: " << TheBlock->read << endl;
+      ss << " Write: " << TheBlock->write << endl;
+
+      int size = TheBlock->limit - TheBlock->base + 1;
+      int found = 0;
+      for (int i = TheBlock->base; i <= TheBlock->limit; i++) {
+        ss << Memory[i];
+        if ((i - TheBlock->base + 1) % limit == 0) {
+          ss << endl;
+        }
+        found++;
       }
-      found++;
+      ss << "\n Computed Size (Limit - Base + 1): " << size << endl;
+      ss << " Found size (counted while printing): " << found << "\n" << endl;
     }
-    ss << "\n Computed Size (Limit - Base + 1): " << size << endl;
-    ss << " Found size (counted while printing): " << found << "\n" << endl;
   }
 
   SemaphorePtr->up();
