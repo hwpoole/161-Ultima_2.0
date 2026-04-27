@@ -951,7 +951,7 @@ int main() {
   Sched_Win = create_window(8, 40, 3, 83);
   Sema_Win = create_window(5, 40, 11, 83);
   Pipe_Win = create_window(9, 40, 16, 83);
-  MMU_Win = create_window(25, 92, 25, 83);
+  MMU_Win = create_window(35, 92, 25, 83);
   write_defaults();
 
   cbreak();
