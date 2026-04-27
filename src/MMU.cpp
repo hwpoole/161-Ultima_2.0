@@ -49,6 +49,8 @@ MMU::MMU() {
   Blocks.push_back(NewBlock);
 
   SemaphorePtr = Kernel::Get_Instance()->Create_Semaphore("Memory Semaphore");
+  SchedulerPtr = Kernel::Get_Instance()->Get_Scheduler();
+  SemaphorePtr->set_scheduler(SchedulerPtr);
 }
 
 /* ~MMU() {...}
@@ -271,7 +273,9 @@ int MMU::Alloc(int Size) {
     Block *NewBlock = new Block;
     NewBlock->base = Orphan->base;
     NewBlock->limit = NewBlock->base + (ceil((double)Size / 64.0) * 64) - 1;
-    NewBlock->owner = pthread_self();
+    NewBlock->read = NewBlock->base;
+    NewBlock->write = NewBlock->base;
+    NewBlock->owner = SchedulerPtr->get_task_id();
     NewBlock->handle = Next_Handle++;
 
     auto it = find(begin(Blocks), end(Blocks), Orphan);
@@ -286,8 +290,10 @@ int MMU::Alloc(int Size) {
   } else {
     auto it = find(begin(Blocks), end(Blocks), Orphan);
     int pos = distance(begin(Blocks), it);
-    Orphan->owner = pthread_self();
+    Orphan->owner = SchedulerPtr->get_task_id();
     Orphan->handle = Next_Handle++;
+    Orphan->read = Orphan->base;
+    Orphan->write = Orphan->base;
     *it = Orphan;
 
     Free_Memory -= (Orphan->limit - Orphan->base + 1);
@@ -335,7 +341,7 @@ int MMU::Free(int Handle) {
     return -1;
   }
 
-  for (int i = DeadBlock->base; i < DeadBlock->limit; i++) {
+  for (int i = DeadBlock->base; i <= DeadBlock->limit; i++) {
     Memory[i] = '#';
   }
 
@@ -390,7 +396,7 @@ int MMU::Read(int Handle) {
   } else if (TheBlock->read > TheBlock->limit) {
     SemaphorePtr->up();
     return -1;
-  } else if (TheBlock->owner != pthread_self()) {
+  } else if (TheBlock->owner != SchedulerPtr->get_task_id()) {
     SemaphorePtr->up();
     return -1;
     // TODO: Seg fault here
@@ -436,7 +442,7 @@ int MMU::Write(int Handle, char ch) {
   } else if (TheBlock->write > TheBlock->limit) {
     SemaphorePtr->up();
     return -1;
-  } else if (TheBlock->owner != pthread_self()) {
+  } else if (TheBlock->owner != SchedulerPtr->get_task_id()) {
     SemaphorePtr->up();
     return -1;
     // TODO: Seg fault here
@@ -480,11 +486,11 @@ string MMU::Read(int Handle, int offset, int size) {
   if (TheBlock->handle != Handle) {
     SemaphorePtr->up();
     return "";
-  } else if (TheBlock->owner != pthread_self()) {
+  } else if (TheBlock->owner != SchedulerPtr->get_task_id()) {
     SemaphorePtr->up();
     return "";
     // TODO: Seg fault here
-  } else if (TheBlock->base + offset + size > TheBlock->limit) {
+  } else if (TheBlock->base + offset + size > TheBlock->limit + 1) {
     SemaphorePtr->up();
     return "";
   }
@@ -531,11 +537,11 @@ int MMU::Write(int Handle, int offset, char *text) {
   if (TheBlock->handle != Handle) {
     SemaphorePtr->up();
     return -1;
-  } else if (TheBlock->owner != pthread_self()) {
+  } else if (TheBlock->owner != SchedulerPtr->get_task_id()) {
     SemaphorePtr->up();
     return -1;
     // TODO: Seg fault here
-  } else if (TheBlock->base + offset + strlen(text) > TheBlock->limit) {
+  } else if (TheBlock->base + offset + strlen(text) > TheBlock->limit + 1) {
     SemaphorePtr->up();
     return -1;
   }
@@ -590,7 +596,7 @@ string MMU::Dump_A_Block(int Handle) {
   ss << " Read: " << TheBlock->read << endl;
   ss << " Write: " << TheBlock->write << "\n" << endl;
 
-  for (int i = TheBlock->base; i < TheBlock->limit; i++) {
+  for (int i = TheBlock->base; i <= TheBlock->limit; i++) {
     ss << Memory[i];
     if ((i + 1) % limit == 0) {
       ss << endl;
@@ -612,28 +618,35 @@ string MMU::Dump_A_Block(int Handle) {
 string MMU::Dump_Blocks() {
   SemaphorePtr->down();
   stringstream ss;
-  int limit = 10;
+  int limit = 90;
 
-  ss << " ---------- Memory Semaphore ---------- " << endl;
-  ss << SemaphorePtr->dump() << endl;
   Block *TheBlock = nullptr;
   for (Block *block : Blocks) {
     TheBlock = block;
 
-    ss << " ---------- Block " << TheBlock->handle << " ---------- " << endl;
-    ss << " Owner: " << TheBlock->owner << endl;
-    ss << " Base: " << TheBlock->base << endl;
-    ss << " Limit: " << TheBlock->limit << endl;
-    ss << " Read: " << TheBlock->read << endl;
-    ss << " Write: " << TheBlock->write << "\n" << endl;
+    if (TheBlock->handle == -1) {
+      ss << " Free space: " << Free_Memory << "\n" << endl;
+    } else {
 
-    for (int i = TheBlock->base; i < TheBlock->limit; i++) {
-      ss << Memory[i];
-      if ((i + 1) % limit == 0) {
-        ss << endl;
+      ss << " ---------- Block " << TheBlock->handle << " ---------- " << endl;
+      ss << " Owner: " << TheBlock->owner << endl;
+      ss << " Base: " << TheBlock->base << endl;
+      ss << " Limit: " << TheBlock->limit << endl;
+      ss << " Read: " << TheBlock->read << endl;
+      ss << " Write: " << TheBlock->write << endl;
+
+      int size = TheBlock->limit - TheBlock->base + 1;
+      int found = 0;
+      for (int i = TheBlock->base; i <= TheBlock->limit; i++) {
+        ss << Memory[i];
+        if ((i - TheBlock->base + 1) % limit == 0) {
+          ss << endl;
+        }
+        found++;
       }
+      ss << "\n Computed Size (Limit - Base + 1): " << size << endl;
+      ss << " Found size (counted while printing): " << found << "\n" << endl;
     }
-    ss << "\n" << endl;
   }
 
   SemaphorePtr->up();

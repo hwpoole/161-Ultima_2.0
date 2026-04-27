@@ -88,6 +88,7 @@ class MMU {
 private:
   static inline MMU *MMU_Ptr = nullptr;
   Semaphore *SemaphorePtr;
+  Scheduler *SchedulerPtr;
   char Memory[1024];
   int Free_Memory = 1024;
   int Next_Handle = 0;
@@ -122,7 +123,7 @@ private:
    */
   struct Block {
     int handle, base, limit, read, write;
-    pthread_t owner;
+    int owner;
 
     Block();
   };

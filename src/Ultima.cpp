@@ -59,6 +59,7 @@
  */
 
 #include "Kernel.h" // Singleton Monitor. Orchestrates all other Ultima classes.
+#include "MMU.h"    // Memory Management Unit.
 #include "Sched.h"  // The Scheduler.
 #include "Sema.h"   // The Semaphore.
 #include "Uthread.h" // Our Uthread - a pthread wrapper for the Kernel.
@@ -83,6 +84,9 @@ Scheduler *SchedulerPtr = KernelPtr->Get_Scheduler();
 // Ask the Kernel to make a Semaphore "Text".
 Semaphore *SemaphorePtr = KernelPtr->Create_Semaphore("Something special!");
 
+// Get a pointer to the MMU.
+MMU *MMUPtr = MMU::Get_Instance();
+
 // Uthread wraps pthreads for use with Kernel. "Ultima Thread."
 uthread ut;
 
@@ -99,6 +103,7 @@ WINDOW *Log_Win;
 WINDOW *Sched_Win;
 WINDOW *Sema_Win;
 WINDOW *Pipe_Win;
+WINDOW *MMU_Win;
 
 // Tick function for syncrhonization.
 void Tick();
@@ -194,10 +199,11 @@ void display_help(WINDOW *Win) {
   write_window(Win, 2, 1, "1= Scenario 1");
   write_window(Win, 3, 1, "2= Scenario 2");
   write_window(Win, 4, 1, "3= Scenario 3");
-  write_window(Win, 5, 1, "p= Pause");
-  write_window(Win, 6, 1, "c= Clear screen");
-  write_window(Win, 7, 1, "h= Help screen");
-  write_window(Win, 8, 1, "q= Quit");
+  write_window(Win, 5, 1, "4= Scenario 4");
+  write_window(Win, 6, 1, "p= Pause");
+  write_window(Win, 7, 1, "c= Clear screen");
+  write_window(Win, 8, 1, "h= Help screen");
+  write_window(Win, 9, 1, "q= Quit");
 }
 
 /* void write_defaults() {...}
@@ -216,6 +222,7 @@ void write_defaults() {
   wclear(Sched_Win);
   wclear(Sema_Win);
   wclear(Pipe_Win);
+  wclear(MMU_Win);
 
   write_window(Log_Win, 1, 5, "...Log Window...\n");
   write_window(Console_Win, 1, 1, "...Console...\n");
@@ -226,6 +233,7 @@ void write_defaults() {
   write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
   write_window(Sema_Win, 1, 3, "...Semaphore Window...\n");
   write_window(Pipe_Win, 1, 3, "...Pipe Window...\n");
+  write_window(MMU_Win, 1, 3, "...MMU Window...\n");
 }
 
 /* void Tick() {...}
@@ -248,6 +256,10 @@ void Tick() {
 
   if (PipePtr != nullptr) {
     write_window_fast(Pipe_Win, PipePtr->dump().c_str());
+  }
+
+  if (MMUPtr != nullptr) {
+    write_window_fast(MMU_Win, MMUPtr->Dump_Blocks().c_str());
   }
 
   pthread_mutex_unlock(&Kernel::CPULocker);
@@ -455,6 +467,335 @@ void *consumer(void *args) {
   return (NULL);
 }
 
+/* void tasks_try_to_read_without_alloc(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * In this sub-scenario, each task will try to read memory, without first
+ * allocating it. We expect them to fail.
+ *
+ * We recall that we made a mistake in programming this sub-scenario, and print
+ * that out for the user...
+ *
+ * 1. Extract args into TaskContext *Context.
+ * 2. Get a buffer.
+ * 3. Declare ints read, handle.
+ * 4. Try to read.
+ * 5. Check if Read() return value is -1.
+ *    5a. If so, we successfully failed.
+ *    5b. Print that.
+ * 6. Else...
+ *    6a. We failed at failing.
+ *    6b. Print that.
+ * 7. Yield.
+ */
+void tasks_try_to_read_without_alloc(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int read, handle;
+
+  sprintf(buffer, " %s wants to read\n", Context->name);
+  write_window(Context->win, buffer);
+  read = MMUPtr->Read(handle);
+  if (read == -1) {
+    sprintf(buffer, " ERROR! Can't read\n I forgot to Alloc()...\n\n");
+    write_window(Context->win, buffer);
+  } else {
+    sprintf(buffer, " %s read %c\n", Context->name, read);
+    write_window(Context->win, buffer);
+  }
+
+  SchedulerPtr->yield();
+}
+
+/* void tasks_alloc_10000(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * In this sub-scenario, the programmer of each task is unsure of how many bytes
+ * they will need, so they just try and allocate 10,000 bytes, figuring that
+ * will be enough for their purposes.
+ *
+ * 1. Extract args into TaskContext *Context.
+ * 2. Get a buffer.
+ * 3. Declare int handle.
+ * 4. Try to alloc 10,000 bytes.
+ * 5. Check return value of Alloc(10000)
+ *    5a. If -1, we failed successfully.
+ *    5b. Print that.
+ * 6. Else...
+ *    6a. We failed at failing.
+ *    6b. Print that.
+ * 7. Yield.
+ */
+void tasks_alloc_10000(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int handle;
+
+  sprintf(buffer, " %s Alloc()'s 10,000\n", Context->name);
+  write_window(Context->win, buffer);
+  handle = MMUPtr->Alloc(10000);
+  if (handle == -1) {
+    sprintf(buffer, " ERROR! Can't Alloc()\n Guess that's too much?\n\n");
+    write_window(Context->win, buffer);
+  } else {
+    sprintf(buffer, " %s was successful!\n", Context->name);
+    write_window(Context->win, buffer);
+  }
+
+  SchedulerPtr->yield();
+}
+
+/* void kill_time_for_inspection(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * This method just exists to *visibly* kill time.
+ * In this way, we let the user know we are waiting for them and giving them a
+ * second to look around.
+ *
+ * 1. Extract args into TaskContext *Context.
+ * 2. Get a buffer.
+ * 3. Do this five times:
+ *    3a. Write " pause for inspection...\n"
+ * 4. Yield.
+ * 5. Write " Continue tests...\n\n"
+ */
+void kill_time_for_inspection(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+
+  // Allow user time to inspect memory condition.
+  write_window(Context->win, "\n");
+  for (int i = 0; i < 5; i++) {
+    write_window(Context->win, " pause for inspection...\n");
+  }
+  write_window(Context->win, "\n");
+  SchedulerPtr->yield();
+  write_window(Context->win, " Continue tests...\n\n");
+}
+
+void tasks_read_bad_blocks(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int read;
+
+  sprintf(buffer, " %s reads another thread's block\n", Context->name);
+  read = MMUPtr->Read(-1);
+  write_window(Context->win, buffer);
+  if (read == -1) {
+    write_window(Context->win, " Failure.\n\n");
+    SchedulerPtr->yield();
+  } else {
+    sprintf(buffer, " Success! Read %c\n\n", read);
+    write_window(Context->win, buffer);
+  }
+}
+
+/* void tasks_alloc_and_write_and_read(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * In this sub-scenario, each task will alloc 64 bytes, write a random char to
+ * them, read them, attempt to read someone else's memory, then free their
+ * blocks.
+ *
+ * 1.  Extract args into TaskContext *Context.
+ * 2.  Get a buffer.
+ * 3.  Declare ints read, write, handle, free_mem.
+ * 4.  Alloc 64, and check the return value.
+ *     4a. If anything but -1, Alloc() gave us a block.
+ *         a. Print success.
+ *     4b. Else,
+ *         a. Print failure.
+ * 5.  Yield.
+ * 6.  Write a random char to the memory block by handle.
+ * 7.  Check the return value of Write().
+ *     7a. If anything but -1, Write() was successful.
+ *         a. Print that.
+ *     7b. Else,
+ *         a. Print failure.
+ * 8.  Yield.
+ * 9.  Read a char from memory by handle.
+ * 10. Check the return value of Read().
+ *     10a. If anything but -1, Read() was successful.
+ *          a. Print that.
+ *     10b. Else,
+ *          a. Print failure.
+ * 11. Call tasks_read_bad_blocks(args);
+ * 12. Free memory.
+ * 13. Check return value of Free().
+ *     13a. If anything but -1, Free() was successful.
+ *          a. Print that.
+ *     13b. Else,
+ *          b. Print failure.
+ * 14. Yield.
+ */
+void tasks_alloc_and_write_and_read(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int read, write, handle, free_mem;
+
+  sprintf(buffer, " %s Alloc()'s 64\n", Context->name);
+  handle = MMUPtr->Alloc(64);
+  write_window(Context->win, buffer);
+  if (handle != -1) {
+    write_window(Context->win, " Success!\n");
+  } else {
+    write_window(Context->win, " Failure.\n");
+  }
+
+  SchedulerPtr->yield();
+
+  char rand_char = ('a' + rand()) % 26;
+  sprintf(buffer, " %s writes %c\n", Context->name, rand_char);
+  write = MMUPtr->Write(handle, rand_char);
+  write_window(Context->win, buffer);
+  if (write != -1) {
+    write_window(Context->win, " Success!\n");
+  } else {
+    write_window(Context->win, " Failure.\n");
+  }
+
+  SchedulerPtr->yield();
+
+  sprintf(buffer, " %s reads memory\n", Context->name);
+  read = MMUPtr->Read(handle);
+  write_window(Context->win, buffer);
+  if (read != -1) {
+    sprintf(buffer, " Success! Read %c\n\n", read);
+    write_window(Context->win, buffer);
+  } else {
+    sprintf(buffer, " Failure.\n\n");
+    write_window(Context->win, buffer);
+  }
+
+  SchedulerPtr->yield();
+  tasks_read_bad_blocks(args);
+
+  sprintf(buffer, " %s frees memory\n", Context->name);
+  free_mem = MMUPtr->Free(handle);
+  write_window(Context->win, buffer);
+  if (free_mem != -1) {
+    write_window(Context->win, " Success.\n\n");
+  } else {
+    write_window(Context->win, " Failure.\n\n");
+  }
+
+  SchedulerPtr->yield();
+}
+
+/* void tasks_compete_for_800(void *args) {...}
+ *
+ * A helper method for Scenario 4.
+ *
+ * In this sub-scenario, each task races against the others to allocate 800
+ * bytes, which we know is most of our available memory...
+ * Since we are working with a strictly cooperative scheduler, we know that
+ * Task1 will go first and get it, then Task2 and Task 3 will be blocked by the
+ * Semaphore. After Task1 is done, Task2 will grab 800 bytes, and so on.
+ *
+ * However, this sub-scenario is not designed with that intimate knowledge
+ * Scheduler. In this case, all tasks must call down on the Semaphore and wait
+ * their turn.
+ *
+ * 1.  Extract args into TaskContext *Context.
+ * 2.  Get a buffer.
+ * 3.  Declare ints handle, read, write, free_mem.
+ * 4.  Write the sub-scenario's goals.
+ *     4a. Yield.
+ * 5.  Set handle = -1 to let While loop run.
+ * 6.  Call down() on Semaphore.
+ * 7.  While handle is -1, try to allocate 800 bytes.
+ *     7a. Then, yield.
+ * 8.  If handle is not -1, we have the block.
+ *     8a. Write that we succeeded.
+ *     8b. Print 5 chars to the block, and inform the user.
+ *     8c. Read all chars just to clear the block.
+ *     8d. Free the memory.
+ *     8e. Check the return value of Free().
+ *         a. If anything other than -1, Free() succeeded.
+ *            1. Print that.
+ *         b. Else,
+ *            1. Print failure.
+ * 9.  Else...
+ *     9a. Print failure.
+ * 10. Call up() on Semaphore.
+ * 11. yield.
+ */
+void tasks_compete_for_800(void *args) {
+  TaskContext *Context = (TaskContext *)args;
+  char buffer[256];
+  int handle, read, write, free_mem;
+
+  write_window(Context->win, " Compete for space.\n");
+  SchedulerPtr->yield();
+
+  sprintf(buffer, " %s wants 800 bytes.\n", Context->name);
+  write_window(Context->win, buffer);
+
+  handle = -1;
+  SemaphorePtr->down();
+  while (handle == -1) {
+    handle = MMUPtr->Alloc(800);
+    SchedulerPtr->yield();
+  }
+  write_window(Context->win, buffer);
+  if (handle != -1) {
+    write_window(Context->win, " Success!\n");
+
+    for (int i = 0; i < 5; i++) {
+      MMUPtr->Write(handle, ('a' + rand() % 26));
+      write_window(Context->win, " Working...\n");
+    }
+
+    for (int i = 0; i < 5; i++) {
+      MMUPtr->Read(handle);
+    }
+    write_window(Context->win, "\n");
+
+    sprintf(buffer, " %s Frees memory\n", Context->name);
+    free_mem = MMUPtr->Free(handle);
+    write_window(Context->win, buffer);
+    if (free_mem != -1) {
+      write_window(Context->win, " Success!\n\n");
+    } else {
+      write_window(Context->win, " Failure.\n\n");
+    }
+  } else {
+    write_window(Context->win, " Failure.\n\n");
+  }
+  SemaphorePtr->up();
+  SchedulerPtr->yield();
+}
+
+/* void *use_mmu(void *arg) {...}
+ *
+ * This is a demo method to use the Memory Management Unit.
+ * This method immediately calls the four helper methods, which are the
+ * sub-scenarios for this scenario.
+ *
+ * 1. Read without alloc. (fails)
+ * 2. Alloc 10,000 bytes. (fails).
+ * 3. Alloc and write/read. (works - but can only read your own block).
+ * 4. Compete for space. (works - but tasks are put in queue for space).
+ */
+void *use_mmu(void *args) {
+
+  tasks_try_to_read_without_alloc(args);
+
+  tasks_alloc_10000(args);
+
+  tasks_alloc_and_write_and_read(args);
+
+  wclear(MMU_Win);
+
+  tasks_compete_for_800(args);
+
+  return (NULL);
+}
+
 //---------------Orchestration----------------------------------------
 
 /* void *console(void *arg) {...}
@@ -469,6 +810,7 @@ void *consumer(void *args) {
  *    - '1' for scenario 1.
  *    - '2' for scenario 2.
  *    - '3' for scenario 3.
+ *    - '4' for scenario 4.
  *    - 'p' for Pause.
  *        - 'r' for Resume.
  *    - 'h' for Help.
@@ -516,13 +858,6 @@ void *console(void *args) {
       ut.create(&Task2, fake_work_with_sema, T2);
       ut.create(&Task3, fake_work_with_sema, T3);
 
-      for (int i = 0; i < 4; i++) {
-        SchedulerPtr->yield();
-      }
-
-      write_window(Log_Win, " Scenario 2 Finished\n");
-      SchedulerPtr->garbage_collect();
-
       break;
     }
     case '3': { // Scenario 3 - Tasks communicate with Pipe.
@@ -531,13 +866,15 @@ void *console(void *args) {
       ut.create(&Task1, producer, T1);
       ut.create(&Task2, consumer, T2);
 
-      // for (int i = 0; i < 4; i++) {
-      //   SchedulerPtr->yield();
-      // }
+      break;
+    }
+    case '4': { // Scenario 4 - Tasks use Memory Management Unit.
+      write_window(Log_Win, " Scenario 4: Threads use MMU\n");
 
-      SchedulerPtr->garbage_collect();
+      ut.create(&Task1, use_mmu, T1);
+      ut.create(&Task2, use_mmu, T2);
+      ut.create(&Task3, use_mmu, T3);
 
-      write_window(Log_Win, " Scenario 3 Finished\n");
       break;
     }
     case 'p': { // PAUSE the Scenarios
@@ -549,6 +886,7 @@ void *console(void *args) {
     }
     case 'c': { // CLEAR the windows
       write_defaults();
+      SchedulerPtr->garbage_collect();
       break;
     }
     case 'q': { // q for quit
@@ -598,21 +936,22 @@ int main() {
   // Initializes the ncurses screen.
   initscr();
 
-  Heading_Win = newwin(10, 80, 3, 2);
+  Heading_Win = newwin(10, 81, 3, 2);
   box(Heading_Win, 0, 0);
   mvwprintw(Heading_Win, 2, 28, "161-ULTIMA 2.0 PHASE 2 DEMO");
   mvwprintw(Heading_Win, 4, 2, "Press 'h' to view the scenarios.");
   mvwprintw(Heading_Win, 5, 2, "Press 'q' or Crtl-C to exit the program.");
   wrefresh(Heading_Win);
 
-  Log_Win = create_window(10, 60, 28, 2);
-  Console_Win = create_window(10, 20, 28, 62);
+  Log_Win = create_window(10, 61, 28, 2);
+  Console_Win = create_window(10, 20, 28, 63);
   Task1_Win = create_window(15, 27, 13, 2);
-  Task2_Win = create_window(15, 26, 13, 29);
-  Task3_Win = create_window(15, 27, 13, 55);
-  Sched_Win = create_window(8, 40, 3, 82);
-  Sema_Win = create_window(5, 40, 11, 82);
-  Pipe_Win = create_window(9, 40, 16, 82);
+  Task2_Win = create_window(15, 27, 13, 29);
+  Task3_Win = create_window(15, 27, 13, 56);
+  Sched_Win = create_window(8, 40, 3, 83);
+  Sema_Win = create_window(5, 40, 11, 83);
+  Pipe_Win = create_window(9, 40, 16, 83);
+  MMU_Win = create_window(25, 92, 25, 83);
   write_defaults();
 
   cbreak();

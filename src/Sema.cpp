@@ -52,6 +52,18 @@ void Semaphore::down() {
   }
 }
 
+void Semaphore::down_if(bool condition) {
+  int this_task = scheduler->get_task_id();
+
+  if (sema_value == 0 || condition) {
+    sema_queue.push(this_task);
+    scheduler->set_state(this_task, BLOCKED);
+    scheduler->yield();
+  } else {
+    sema_value--;
+  }
+}
+
 /* void Semaphore::up() {...}
  *
  * Hands the guarded resource off *strictly the next task in the queue*, or
