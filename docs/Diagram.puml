@@ -30,6 +30,39 @@ package "Kernel Space" {
     }
 }
 package "Subsystems" {
+    class MMU {
+        - {static} MMU_Ptr : MMU*
+        - SemaphorePtr : Semaphore*
+        - SchedulerPtr : Scheduler*
+        - Memory[1024] : char
+        - Free_Memory : int
+        - Next_Handle : int
+        - Blocks : list<BLock *>
+        - MMU() <<constructor>>
+        - ~MMU() <<destructor>>
+        - Left() : int
+        - Largest() : int
+        - Smallest() : int
+        - Coalesce() : void
+        + {static} Get_Instance() : MMU*
+        + Alloc(Size : int) : int
+        + Free(Handle : int) : int
+        + Read(Handle : int) : int
+        + Write(Handle : int, ch : char) : int
+        + Read(Handle : int, offset : int, size : int) : string
+        + Write(Handle : int, offset : int, text: char*) : int
+        + Dump_A_Block(Handle : int) : string
+        + Dump_Blocks() : string
+    }
+    class Block {
+    - handle : int
+    - base : int
+    - limit : int
+    - read : int
+    - write: int
+    - owner : int
+    - Block() <<constructor>>
+    }
     class Scheduler {
         - process_table : TCB*
         - current_task : int
@@ -117,9 +150,11 @@ package "Low-Level Structures" {
 }
 ' Relationships
 uthread ..> Kernel : "delegates to"
+uthread ..> MMU : "Uses for memory"
 Kernel *-- Scheduler : "owns and uses"
 Kernel o-- Semaphore : "manages many"
 Kernel o-- Pipe : "manages many"
+MMU *-- Block : "Uses many"
 Scheduler *-- CircularLinkedList : "uses for storage"
 CircularLinkedList *-- Node : "composed of"
 Scheduler *-- TCB : "manages many"
