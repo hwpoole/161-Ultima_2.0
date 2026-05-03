@@ -10,7 +10,9 @@
 
 #pragma once
 
+#include <list>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -31,6 +33,8 @@ private:
   string fs_name;
   char init_char;
   int block_size, blocks_count, next_handle;
+  list<INode *> Nodes;
+  vector<char> Disk;
 
   enum Mode { R, W };
 
