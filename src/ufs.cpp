@@ -49,10 +49,11 @@ ufs::INode::INode() {
  * 3. Set start block to Start.
  * 4. Set size to 0.
  * 5. Set permission with bounds checks (highest allowable is 7).
- * 6. Set blocks owned.
+ * 6. Set read and write pointers.
+ * 7. Set creation and last modified to the current time.
  */
-ufs::INode::INode(char Name[8], int Permission[4], int Start,
-                  unsigned int Blocks[4]) {
+ufs::INode::INode(char Name[8], int Permission[4], int Start, int Read,
+                  int Write, unsigned int Blocks[4]) {
   Name[7] = '\0';
   strcpy(filename, Name);
 
@@ -64,6 +65,9 @@ ufs::INode::INode(char Name[8], int Permission[4], int Start,
     permission[i] = (Permission[i] <= 7) ? Permission[i] : 7;
     blocks[i] = Blocks[i];
   }
+
+  read = Read;
+  write = Write;
 
   creation = clock();
   last_modified = creation;
@@ -158,8 +162,14 @@ void ufs::Format() {
  *
  * Returns -1 on error.
  *
- * 1. Find
- * TODO: This
+ * 1. Find the node by name, if it exists.
+ *    1a. Return -1 if we cannot find it.
+ * 2. If we find a match,
+ *    2a. If the permissions allow,
+ *        1. Set the node to be open.
+ *        2. Return 1
+ * 3. Else,
+ *    3a. Return -1
  */
 int ufs::Open(char FileName[8], Mode mode) {
   INode *TheNode = nullptr;
@@ -168,25 +178,128 @@ int ufs::Open(char FileName[8], Mode mode) {
     TheNode = *it;
 
     if (TheNode->filename == FileName) {
-      break;
-    } else if (distance(it, Nodes.end()) == 2 &&
-               TheNode->filename != FileName) {
+      if (TheNode->open == true) {
+        return -1;
+      } else if (TheNode->owner_TID == pthread_self()) {
+        TheNode->open = true;
+        *it = TheNode;
+
+        return 1;
+      } else if (TheNode->permission[3] >= 4 && mode == R) {
+        TheNode->open = true;
+        *it = TheNode;
+
+        return 1;
+      } else if (TheNode->permission[3] != 1 && TheNode->permission[3] != 4 &&
+                 TheNode->permission[3] != 5 && mode == W) {
+        TheNode->open = true;
+        *it = TheNode;
+
+        return 1;
+      }
+    } else if (distance(it, Nodes.end()) == 2) {
       return -1;
     }
   }
+
+  return -1;
 }
 
-/*
+/* Close(FileName[8]) {...}
+ *
+ * Closes the file, if it exists and permissions allow.
+ * Returns -1 if it could not find the file.
+ *
+ * 1. Find the node by name, if it exists.
+ *    1a. Return -1 if we cannot find it.
+ * 2. If we find a match and it is open,
+ *    2a. Check that the owner called for close.
+ *        a. If so, close it.
+ *        b. Reutn 1.
+ * 3. Else,
+ *    3a. Return -1.
  */
-int ufs::Close(char FileName[8]) {}
+int ufs::Close(char FileName[8]) {
+  INode *TheNode = nullptr;
 
-/*
- */
-int ufs::Read_Char(char FileName[8]) {}
+  for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
+    TheNode = *it;
 
-/*
+    if (TheNode->filename == FileName && TheNode->open == true) {
+      if (TheNode->owner_TID == pthread_self()) {
+        TheNode->open = false;
+        *it = TheNode;
+
+        return 1;
+      }
+    } else if (distance(it, Nodes.end()) == 2) {
+      return -1;
+    }
+  }
+
+  return -1;
+}
+
+/* Read_Char(FileName[8]) {...}
+ *
+ * Reads a char from the specified file's read pointer, if the file exists.
+ *
+ * 1. Find the node by name, if it exists.
+ *    1a. Return -1 if we cannot find it.
+ * 2. If we find a match and it is open,
+ *    2a. Check for permission to read...
+ *        a. If so, read and update the read pointer.
+ *        b. Return the read char.
+ * 3. Else,
+ *    3a. Return -1.
  */
-int ufs::Write_Char(char FileName[8]) {}
+int ufs::Read_Char(char FileName[8]) {
+  INode *TheNode = nullptr;
+
+  for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
+    TheNode = *it;
+
+    if (TheNode->filename == FileName && TheNode->open == true) {
+      if (TheNode->owner_TID == pthread_self() || TheNode->permission[3] >= 4) {
+        char Read = Disk[TheNode->read++];
+        *it = TheNode;
+        return Read;
+      }
+    } else if (distance(it, Nodes.end()) == 2) {
+      return -1;
+    }
+  }
+
+  return -1;
+}
+
+/* Write_Char(FileName[8]) {...}
+ *
+ * Writes a char to the specified file's write pointer, if the file exists.
+ *
+ *
+ */
+int ufs::Write_Char(char FileName[8], char Char) {
+  INode *TheNode = nullptr;
+
+  for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
+    TheNode = *it;
+
+    if (TheNode->filename == FileName && TheNode->open == true) {
+      if (TheNode->owner_TID == pthread_self() ||
+          (TheNode->permission[3] != 1 && TheNode->permission[3] != 4 &&
+           TheNode->permission[3] != 5)) {
+        Disk[TheNode->write++] = Char;
+        *it = TheNode;
+        return Char;
+      }
+    } else if (distance(it, Nodes.end()) == 2) {
+      return -1;
+    }
+  }
+
+  return -1;
+}
 
 /*
  */

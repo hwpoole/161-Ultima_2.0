@@ -20,14 +20,15 @@ class ufs {
 private:
   struct INode {
     char filename[8];
-    int owner_TID, start_block, size, permission[4];
+    int owner_TID, start_block, size, read, write, permission[4];
     unsigned int blocks[4];
     time_t creation, last_modified;
-    bool open; // TODO: Keep?
+    bool open;
 
     INode();
 
-    INode(char Name[8], int Permission[4], int Start, unsigned int Blocks[4]);
+    INode(char Name[8], int Permission[4], int Start, int Read, int Write,
+          unsigned int Blocks[4]);
   };
 
   static inline ufs *UFS_Ptr = nullptr;
@@ -59,7 +60,7 @@ public:
 
   int Read_Char(char FileName[8]);
 
-  int Write_Char(char FileName[8]);
+  int Write_Char(char FileName[8], char Char);
 
   int Create_File(char FileName[8], int Size, int Permission[4]);
 
