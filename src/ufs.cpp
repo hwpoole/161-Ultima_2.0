@@ -134,31 +134,47 @@ ufs *ufs::Get_Instance(string Name, int Number_Of_Blocks, int Block_Size,
  * Wipes the disk and resets all I-Nodes in the process.
  *
  * 1. Set the disk to be entirely null bytes.
- * 2. Remove all I-Nodes from Nodes.
- * 3. Create all empty I-Nodes and push onto Nodes.
+ * 2. Replace all I-Nodes with default I-Nodes.
  */
 void ufs::Format() {
   for (int i = 0; i < Disk.size(); i++) {
     Disk[i] = '\0';
   }
 
-  for (int i = 0; i < Nodes.size(); i++) {
-    INode *TheNode = Nodes.front();
+  for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
+    INode *TheNode = *it;
     delete TheNode;
-    Nodes.pop_front();
-  }
 
-  for (int i = 0; i <= blocks_count; i++) {
-    INode *NewNode = new INode();
-    Nodes.push_back(NewNode);
+    *it = new INode();
   }
 }
 
 /* Open(FileName[8], mode) {...}
  *
+ * Opens a file on a few conditions:
  *
+ * The file must exist.
+ * The file must be accessible by the calling task.
+ *
+ * Returns -1 on error.
+ *
+ * 1. Find
+ * TODO: This
  */
-int ufs::Open(char FileName[8], Mode mode) {}
+int ufs::Open(char FileName[8], Mode mode) {
+  INode *TheNode = nullptr;
+
+  for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
+    TheNode = *it;
+
+    if (TheNode->filename == FileName) {
+      break;
+    } else if (distance(it, Nodes.end()) == 2 &&
+               TheNode->filename != FileName) {
+      return -1;
+    }
+  }
+}
 
 /*
  */

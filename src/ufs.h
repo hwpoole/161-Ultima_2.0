@@ -23,6 +23,7 @@ private:
     int owner_TID, start_block, size, permission[4];
     unsigned int blocks[4];
     time_t creation, last_modified;
+    bool open; // TODO: Keep?
 
     INode();
 
