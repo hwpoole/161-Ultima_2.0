@@ -34,6 +34,7 @@ private:
 
   static inline ufs *UFS_Ptr = nullptr;
   static inline Scheduler *Scheduler_Ptr = nullptr;
+  static inline Semaphore *Sempahore_Ptr = nullptr;
   string fs_name;
   char init_char;
   int block_size, blocks_count;

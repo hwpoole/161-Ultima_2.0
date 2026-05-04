@@ -97,6 +97,7 @@ ufs::ufs(string Name, int Block_Num, int Block_Size, char Init_Char) {
   Disk.assign((blocks_count * block_size), init_char);
 
   Scheduler_Ptr = Kernel::Get_Instance()->Get_Scheduler();
+  Sempahore_Ptr = Kernel::Get_Instance()->Create_Semaphore("UFS Semaphore");
 }
 
 /* Get_Instance() {...}
@@ -144,6 +145,7 @@ ufs *ufs::Get_Instance(string Name, int Number_Of_Blocks, int Block_Size,
  * 3. Clears Nodes.
  */
 void ufs::Format() {
+  Sempahore_Ptr->down();
   for (int i = 0; i < Disk.size(); i++) {
     Disk[i] = '\0';
   }
@@ -154,6 +156,7 @@ void ufs::Format() {
   }
 
   Nodes.clear();
+  Sempahore_Ptr->up();
 }
 
 /* Open(FileName[8], mode) {...}
@@ -177,34 +180,30 @@ void ufs::Format() {
 int ufs::Open(char FileName[8], Mode mode) {
   INode *TheNode = nullptr;
 
+  Sempahore_Ptr->down();
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
     if (strcmp(TheNode->filename, FileName) == 0) {
       if (TheNode->open == true) {
+        Sempahore_Ptr->up();
         return -1;
-      } else if (TheNode->owner_TID == pthread_self()) {
+      } else if (TheNode->owner_TID == pthread_self() ||
+                 (TheNode->permission[3] >= 4 && mode == R) ||
+                 (TheNode->permission[3] != 1 && TheNode->permission[3] != 4 &&
+                  TheNode->permission[3] != 5 && mode == W)) {
         TheNode->open = true;
         *it = TheNode;
 
+        Sempahore_Ptr->up();
         return 1;
-      } else if (TheNode->permission[3] >= 4 && mode == R) {
-        TheNode->open = true;
-        *it = TheNode;
-
-        return 1;
-      } else if (TheNode->permission[3] != 1 && TheNode->permission[3] != 4 &&
-                 TheNode->permission[3] != 5 && mode == W) {
-        TheNode->open = true;
-        *it = TheNode;
-
-        return 1;
+      } else if (distance(it, Nodes.end()) == 2) {
+        break;
       }
-    } else if (distance(it, Nodes.end()) == 2) {
-      return -1;
     }
   }
 
+  Sempahore_Ptr->up();
   return -1;
 }
 
@@ -225,6 +224,7 @@ int ufs::Open(char FileName[8], Mode mode) {
 int ufs::Close(char FileName[8]) {
   INode *TheNode = nullptr;
 
+  Sempahore_Ptr->down();
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
@@ -233,13 +233,15 @@ int ufs::Close(char FileName[8]) {
         TheNode->open = false;
         *it = TheNode;
 
+        Sempahore_Ptr->up();
         return 1;
       }
     } else if (distance(it, Nodes.end()) == 2) {
-      return -1;
+      break;
     }
   }
 
+  Sempahore_Ptr->up();
   return -1;
 }
 
@@ -261,6 +263,7 @@ int ufs::Close(char FileName[8]) {
 int ufs::Read_Char(char FileName[8]) {
   INode *TheNode = nullptr;
 
+  Sempahore_Ptr->down();
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
@@ -273,13 +276,15 @@ int ufs::Read_Char(char FileName[8]) {
         char Read = Disk[Disk_Pos];
         TheNode->read++;
         *it = TheNode;
+        Sempahore_Ptr->up();
         return Read;
       }
     } else if (distance(it, Nodes.end()) == 2) {
-      return -1;
+      break;
     }
   }
 
+  Sempahore_Ptr->up();
   return -1;
 }
 
@@ -301,6 +306,7 @@ int ufs::Read_Char(char FileName[8]) {
 int ufs::Write_Char(char FileName[8], char Char) {
   INode *TheNode = nullptr;
 
+  Sempahore_Ptr->down();
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
@@ -317,16 +323,18 @@ int ufs::Write_Char(char FileName[8], char Char) {
           TheNode->size++;
           TheNode->write++;
           *it = TheNode;
+          Sempahore_Ptr->up();
           return Char;
         } else {
-          return -1;
+          break;
         }
       }
     } else if (distance(it, Nodes.end()) == 2) {
-      return -1;
+      break;
     }
   }
 
+  Sempahore_Ptr->up();
   return -1;
 }
 
@@ -344,15 +352,19 @@ int ufs::Write_Char(char FileName[8], char Char) {
  */
 int ufs::Create_File(char FileName[8], int Size, int Permission[4]) {
   INode *TheNode = nullptr;
+
+  Sempahore_Ptr->down();
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
     if (strcmp(TheNode->filename, FileName) == 0) {
+      Sempahore_Ptr->up();
       return -1;
     }
   }
 
   int Blocks_Needed = (Size + block_size - 1) / block_size;
   if (Blocks_Needed > 4 || Nodes.size() >= 16) {
+    Sempahore_Ptr->up();
     return -1;
   }
 
@@ -368,6 +380,7 @@ int ufs::Create_File(char FileName[8], int Size, int Permission[4]) {
   INode *DoneNode = new INode(FileName, Permission, assigned);
   Nodes.push_back(DoneNode);
 
+  Sempahore_Ptr->up();
   return 1;
 }
 
@@ -386,6 +399,7 @@ int ufs::Delete_File(char FileName[8]) {
   INode *TheNode = nullptr;
   _List_iterator<ufs::INode *> NodeIterator = Nodes.begin();
 
+  Sempahore_Ptr->down();
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
@@ -393,9 +407,11 @@ int ufs::Delete_File(char FileName[8]) {
       if (TheNode->owner_TID != pthread_self() &&
           (TheNode->permission[3] == 1 || TheNode->permission[3] == 4 ||
            TheNode->permission[3] == 5)) {
+        Sempahore_Ptr->up();
         return -1;
       }
     } else if (distance(it, Nodes.end()) == 2) {
+      Sempahore_Ptr->up();
       return -1;
     }
 
@@ -412,6 +428,7 @@ int ufs::Delete_File(char FileName[8]) {
   Nodes.erase(NodeIterator);
   delete TheNode;
 
+  Sempahore_Ptr->up();
   return 1;
 }
 
@@ -428,6 +445,7 @@ int ufs::Delete_File(char FileName[8]) {
 int ufs::Change_Permissions(char FileName[8], int Permission[4]) {
   INode *TheNode = nullptr;
 
+  Sempahore_Ptr->down();
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
@@ -436,12 +454,14 @@ int ufs::Change_Permissions(char FileName[8], int Permission[4]) {
         TheNode->permission[i] = Permission[i];
       }
 
+      Sempahore_Ptr->up();
       return 1;
     } else if (distance(it, Nodes.end()) == 2) {
-      return -1;
+      break;
     }
   }
 
+  Sempahore_Ptr->up();
   return -1;
 }
 
@@ -466,6 +486,7 @@ string ufs::Dump() {
 
   INode *TheNode = nullptr;
 
+  Sempahore_Ptr->down();
   for (INode *Node : Nodes) {
     TheNode = Node;
     string Name = TheNode->filename;
@@ -493,5 +514,6 @@ string ufs::Dump() {
     ss << " Modified: " << TheNode->last_modified << endl;
   }
 
+  Sempahore_Ptr->up();
   return ss.str();
 }
