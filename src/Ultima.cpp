@@ -841,11 +841,76 @@ void *use_mmu(void *args) {
 
 // ---------------------- UFS ----------------------------------------
 
+/* void tasks_write_without_creating_a_file(void *args) {...}
+ *
+ * A helper method for scenario 5.
+ *
+ * In this sub-scenario, each task tries to write to a file without having first
+ * made one. Perhaps someone has forgotten where they last put the file, or is
+ * looking for a file they are sure exists!
+ */
+void tasks_write_without_creating_a_file(void *args) {}
+
+/* void tasks_create_a_file_and_write_to_it(void *args) {...}
+ *
+ * A helper method for scenario 5.
+ *
+ * In this sub-scenario, each task creates a file, and writes random chars to
+ * it. Task 3 will create a file with ZERO permissions for others.
+ */
+void tasks_create_a_file_and_write_to_it(void *args) {}
+
+/* void tasks_try_to_read_files_they_dont_own(void *args) {...}
+ *
+ * A helper method for scenario 5.
+ *
+ * In this sub-scenario, each task tries to read Task 3's file. Only Task 3
+ * should be able to access it.
+ */
+void tasks_try_to_read_files_they_dont_own(void *args) {}
+
+/* void tasks_try_to_write_files_they_dont_own(void *args) {...}
+ *
+ * A helper method for scenario 5.
+ *
+ * In this sub-scenario, each task tries to write Task 3's file. Only Task 3
+ * should be able to write to it. Task 3 will try to write beyond the possible
+ * bounds of its file.
+ */
+void tasks_try_to_write_files_they_dont_own(void *args) {}
+
+/* void tasks_try_to_make_big_files(void *args) {...}
+ *
+ * A helper method for scenario 5.
+ *
+ * In this sub-scenario, each task will try to make a file that is way too big
+ * for our current free space. We expect all to error out.
+ *
+ * Task 1 will be upset about this, so it makes a call to Dir() to show the
+ * directory contents. Then, it deletes files until it has enough space.
+ *
+ * Task 3 will retaliate by formatting the disk.
+ */
+void tasks_try_to_make_big_files_then_get_mad_about_it(void *args) {}
+
 /* void *use_ufs(void *args) {...}
  *
  * This is a demo method for the Ultima Filesystem.
  */
-void *use_ufs(void *args) { return (NULL); }
+void *use_ufs(void *args) {
+
+  tasks_write_without_creating_a_file(args);
+
+  tasks_create_a_file_and_write_to_it(args);
+
+  tasks_try_to_read_files_they_dont_own(args);
+
+  tasks_try_to_write_files_they_dont_own(args);
+
+  tasks_try_to_make_big_files_then_get_mad_about_it(args);
+
+  return (NULL);
+}
 
 //---------------Orchestration----------------------------------------
 
