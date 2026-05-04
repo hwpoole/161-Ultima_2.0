@@ -212,6 +212,7 @@ void display_help(WINDOW *Win) {
   write_window(Win, 3, 1, "2= Scenario 2");
   write_window(Win, 4, 1, "3= Scenario 3");
   write_window(Win, 5, 1, "4= Scenario 4");
+  write_window(Win, 5, 1, "5= Scenario 5");
   write_window(Win, 6, 1, "p= Pause");
   write_window(Win, 7, 1, "c= Clear screen");
   write_window(Win, 8, 1, "h= Help screen");
@@ -235,17 +236,19 @@ void write_defaults() {
   wclear(Sema_Win);
   wclear(Pipe_Win);
   wclear(MMU_Win);
+  wclear(UFS_Win);
 
-  write_window(Log_Win, 1, 5, "...Log Window...\n");
+  write_window(Log_Win, 1, 18, "...Log Window...\n");
   write_window(Console_Win, 1, 1, "...Console...\n");
   write_window(Console_Win, 2, 1, "161-Ultima 2.0 #\n");
   write_window(Task1_Win, 6, 1, "Thread 1\n");
   write_window(Task2_Win, 6, 1, "Thread 2\n");
   write_window(Task3_Win, 6, 1, "Thread 3\n");
-  write_window(Sched_Win, 1, 3, "...Scheduler Window...\n");
-  write_window(Sema_Win, 1, 3, "...Semaphore Window...\n");
-  write_window(Pipe_Win, 1, 3, "...Pipe Window...\n");
-  write_window(MMU_Win, 1, 3, "...MMU Window...\n");
+  write_window(Sched_Win, 1, 7, "...Scheduler Window...\n");
+  write_window(Sema_Win, 1, 7, "...Semaphore Window...\n");
+  write_window(Pipe_Win, 1, 10, "...Pipe Window...\n");
+  write_window(MMU_Win, 1, 36, "...MMU Window...\n");
+  write_window(UFS_Win, 1, 11, "...UFS Window...\n");
 }
 
 /* void Tick() {...}
@@ -828,6 +831,16 @@ void *use_mmu(void *args) {
   return (NULL);
 }
 
+/* void *use_ufs(void *args) {...}
+ *
+ * This is a demo method for the Ultima Filesystem.
+ */
+void *use_ufs(void *args) {
+  if (false) {
+  }
+  return (NULL);
+}
+
 //---------------Orchestration----------------------------------------
 
 /* void *console(void *arg) {...}
@@ -909,6 +922,15 @@ void *console(void *args) {
 
       break;
     }
+    case '5': { // Scenario 5 - Tasks use the Ultima Filesystem.
+      write_window(Log_Win, " Scenario 5: Threads use UFS\n");
+
+      ut.create(&Task1, use_ufs, T1);
+      ut.create(&Task2, use_ufs, T2);
+      ut.create(&Task3, use_ufs, T3);
+
+      break;
+    }
     case 'p': { // PAUSE the Scenarios
       write_window(Log_Win, " PAUSED: 'r' TO RESUME\n");
       while (input != 'r') {
@@ -970,13 +992,13 @@ int main() {
 
   Heading_Win = newwin(10, 81, 3, 2);
   box(Heading_Win, 0, 0);
-  mvwprintw(Heading_Win, 2, 28, "161-ULTIMA 2.0 PHASE 2 DEMO");
+  mvwprintw(Heading_Win, 2, 28, "161-ULTIMA 2.0 PHASE 4 DEMO");
   mvwprintw(Heading_Win, 4, 2, "Press 'h' to view the scenarios.");
   mvwprintw(Heading_Win, 5, 2, "Press 'q' or Crtl-C to exit the program.");
   wrefresh(Heading_Win);
 
-  Log_Win = create_window(10, 61, 28, 2);
-  Console_Win = create_window(10, 20, 28, 63);
+  Log_Win = create_window(12, 61, 28, 2);
+  Console_Win = create_window(12, 20, 28, 63);
   Task1_Win = create_window(15, 27, 13, 2);
   Task2_Win = create_window(15, 27, 13, 29);
   Task3_Win = create_window(15, 27, 13, 56);
@@ -984,6 +1006,7 @@ int main() {
   Sema_Win = create_window(5, 40, 11, 83);
   Pipe_Win = create_window(9, 40, 16, 83);
   MMU_Win = create_window(35, 92, 25, 83);
+  UFS_Win = create_window(22, 40, 3, 123);
   write_defaults();
 
   cbreak();
