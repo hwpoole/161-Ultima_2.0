@@ -37,6 +37,7 @@ add_executable(                         #
   src/Uthread.cpp
   src/Pipe.cpp
   src/MMU.cpp
+  src/ufs.cpp
 )
 
 target_include_directories(
