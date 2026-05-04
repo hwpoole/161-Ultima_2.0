@@ -72,9 +72,9 @@ public:
 
   int Change_Permissions(char FileName[8], int Permission[4]);
 
-  void Dir();
+  string Dir();
 
-  void Task_Dir();
+  string Task_Dir();
 
   string Dump();
 };

@@ -469,7 +469,29 @@ int ufs::Change_Permissions(char FileName[8], int Permission[4]) {
  *
  * Shows the directory's contents.
  */
-void ufs::Dir() {}
+string ufs::Dir() {
+  stringstream ss;
+  INode *TheNode = nullptr;
+
+  ss << " Permissions   Size   Date Modified   Name" << endl;
+
+  Sempahore_Ptr->down();
+  for (INode *Node : Nodes) {
+    TheNode = Node;
+    string Name = TheNode->filename;
+
+    for (int i = 0; i < 4; i++) {
+      ss << TheNode->permission[i];
+    }
+
+    ss << " " << TheNode->size;
+    ss << " " << TheNode->last_modified;
+    ss << " " << Name << endl;
+  }
+
+  Sempahore_Ptr->up();
+  return ss.str();
+}
 
 /* Task_Dir() {...}
  *
