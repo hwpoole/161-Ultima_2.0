@@ -70,6 +70,7 @@
 #include "Sched.h"  // The Scheduler.
 #include "Sema.h"   // The Semaphore.
 #include "Uthread.h" // Our Uthread - a pthread wrapper for the Kernel.
+#include "ufs.h"
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -100,6 +101,9 @@ uthread ut;
 // Pointer to a yet undefined Pipe.
 Pipe *PipePtr;
 
+// Get a pointer to the UFS
+ufs *UFSPtr = ufs::Get_Instance();
+
 // All windows asked for by methods.
 WINDOW *Task1_Win;
 WINDOW *Task2_Win;
@@ -111,6 +115,7 @@ WINDOW *Sched_Win;
 WINDOW *Sema_Win;
 WINDOW *Pipe_Win;
 WINDOW *MMU_Win;
+WINDOW *UFS_Win;
 
 // Tick function for syncrhonization.
 void Tick();
@@ -157,7 +162,7 @@ WINDOW *create_window(int height, int width, int starty, int startx) {
  * 4. Calls Tick()
  */
 void write_window(WINDOW *Win, const char *text) {
-  wprintw(Win, text);
+  wprintw(Win, "%s", text);
   box(Win, 0, 0);
   wrefresh(Win);
 
@@ -171,7 +176,7 @@ void write_window(WINDOW *Win, const char *text) {
  * Infinite recursion -> segmentation fault.
  */
 void write_window_fast(WINDOW *Win, const char *text) {
-  wprintw(Win, text);
+  wprintw(Win, "%s", text);
   box(Win, 0, 0);
   wrefresh(Win);
 }
@@ -186,7 +191,7 @@ void write_window_fast(WINDOW *Win, const char *text) {
  * 3. Refreshes the window.
  */
 void write_window(WINDOW *Win, int y, int x, const char *text) {
-  mvwprintw(Win, y, x, text);
+  mvwprintw(Win, y, x, "%s", text);
   box(Win, 0, 0);
   wrefresh(Win);
 }
