@@ -1,6 +1,6 @@
 /* 161-Ultima 2.0 Phase 2 Demo file.
  *
- * This Demo file feeatures three scenarios of consequence, for three features
+ * This Demo file feeatures five scenarios of consequence, for five features
  * of consequence in the Ultima 2.0 OS:
  *
  * 1. Strict Round Robin Scheduling.
@@ -11,7 +11,7 @@
  *
  * 2. Semaphore and its queue.
  *
- * Three utrheads are spawned and dispatched to complete some "fake work"
+ * Three uthreads are spawned and dispatched to complete some "fake work"
  * requiring a Semaphore. Each tasks that can't get the Semaphore will be added
  * to a queue, and will gain access to the guarded resource strictly in the
  * order they were added to the queue.
@@ -22,6 +22,13 @@
  * consumer. Each tries to get access to a Pipe, and locks a Semaphore to
  * prevent the other from messing with the Pipe while they are working on it.
  * Random chars are passed between uthreads.
+ *
+ * 4. Memory Management.
+ *
+ * Three uthreads are spawned and dispatched to
+ *TODO: THIS
+ *
+ * 5. Ultima File System.
  *
  *
  * There are interesting features as follows:
