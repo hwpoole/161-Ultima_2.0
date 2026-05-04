@@ -284,6 +284,8 @@ void Tick() {
 
 //----------------Scenario Methods----------------------------------------
 
+//----------------------- Scheduler --------------------------------------
+
 /* void *fake_work(void *args) {...}
  *
  * For Scenario 1.
@@ -323,6 +325,8 @@ void *fake_work(void *args) {
   return (NULL);
 }
 
+// ------------------------------- Semaphore ----------------------------------
+
 /* void *fake_work_with_sema(void *args) {...}
  *
  * For Scenario 2.
@@ -359,6 +363,8 @@ void *fake_work_with_sema(void *args) {
 
   return (NULL);
 }
+
+// ----------------------------- Producer-Consumer ------------------
 
 /* void *producer(void *args) {...}
  *
@@ -481,6 +487,8 @@ void *consumer(void *args) {
   PipePtr->reset(1);
   return (NULL);
 }
+
+//----------------------------- MMU ------------------------------------------
 
 /* void tasks_try_to_read_without_alloc(void *args) {...}
  *
@@ -831,15 +839,13 @@ void *use_mmu(void *args) {
   return (NULL);
 }
 
+// ---------------------- UFS ----------------------------------------
+
 /* void *use_ufs(void *args) {...}
  *
  * This is a demo method for the Ultima Filesystem.
  */
-void *use_ufs(void *args) {
-  if (false) {
-  }
-  return (NULL);
-}
+void *use_ufs(void *args) { return (NULL); }
 
 //---------------Orchestration----------------------------------------
 
