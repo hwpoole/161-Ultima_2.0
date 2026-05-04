@@ -9,10 +9,12 @@
  */
 
 #include "ufs.h"
-#include <cstddef>
+#include "Kernel.h"
+#include <algorithm>
 #include <cstring>
 #include <ctime>
 #include <pthread.h>
+#include <sstream>
 
 /* INode() {...}
  *
@@ -46,28 +48,25 @@ ufs::INode::INode() {
  * 1. Force last position in Name[8] to be the null byte.
  *    1a. Then, copy to filename.
  * 2. Set the current pthread as the owner.
- * 3. Set start block to Start.
- * 4. Set size to 0.
+ * 3. Set size, read, write to 0.
+ * 4. Set open to false.
  * 5. Set permission with bounds checks (highest allowable is 7).
- * 6. Set read and write pointers.
- * 7. Set creation and last modified to the current time.
+ * 6. Set creation and last modified to the current time.
  */
-ufs::INode::INode(char Name[8], int Permission[4], int Start, int Read,
-                  int Write, unsigned int Blocks[4]) {
+ufs::INode::INode(char Name[8], int Permission[4], unsigned int Blocks[4]) {
   Name[7] = '\0';
   strcpy(filename, Name);
 
-  owner_TID = pthread_self();
-  start_block = Start;
+  owner_TID = Scheduler_Ptr->get_task_id();
   size = 0;
+  read = 0;
+  write = 0;
+  open = false;
 
   for (int i = 0; i < 4; i++) {
     permission[i] = (Permission[i] <= 7) ? Permission[i] : 7;
     blocks[i] = Blocks[i];
   }
-
-  read = Read;
-  write = Write;
 
   creation = clock();
   last_modified = creation;
@@ -95,6 +94,9 @@ ufs::ufs(string Name, int Block_Num, int Block_Size, char Init_Char) {
   }
 
   init_char = Init_Char;
+  Disk.assign((blocks_count * block_size), init_char);
+
+  Scheduler_Ptr = Kernel::Get_Instance()->Get_Scheduler();
 }
 
 /* Get_Instance() {...}
@@ -138,7 +140,8 @@ ufs *ufs::Get_Instance(string Name, int Number_Of_Blocks, int Block_Size,
  * Wipes the disk and resets all I-Nodes in the process.
  *
  * 1. Set the disk to be entirely null bytes.
- * 2. Replace all I-Nodes with default I-Nodes.
+ * 2. Delete all I-Nodes.
+ * 3. Clears Nodes.
  */
 void ufs::Format() {
   for (int i = 0; i < Disk.size(); i++) {
@@ -148,9 +151,9 @@ void ufs::Format() {
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     INode *TheNode = *it;
     delete TheNode;
-
-    *it = new INode();
   }
+
+  Nodes.clear();
 }
 
 /* Open(FileName[8], mode) {...}
@@ -177,7 +180,7 @@ int ufs::Open(char FileName[8], Mode mode) {
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
-    if (TheNode->filename == FileName) {
+    if (strcmp(TheNode->filename, FileName) == 0) {
       if (TheNode->open == true) {
         return -1;
       } else if (TheNode->owner_TID == pthread_self()) {
@@ -225,7 +228,7 @@ int ufs::Close(char FileName[8]) {
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
-    if (TheNode->filename == FileName && TheNode->open == true) {
+    if (strcmp(TheNode->filename, FileName) == 0 && TheNode->open == true) {
       if (TheNode->owner_TID == pthread_self()) {
         TheNode->open = false;
         *it = TheNode;
@@ -248,8 +251,10 @@ int ufs::Close(char FileName[8]) {
  *    1a. Return -1 if we cannot find it.
  * 2. If we find a match and it is open,
  *    2a. Check for permission to read...
- *        a. If so, read and update the read pointer.
- *        b. Return the read char.
+ *        a. If so, calculate the read pointer's disk position.
+ *        b. Read a char from disk.
+ *        c. Update the read pointer.
+ *        d. Return the read char.
  * 3. Else,
  *    3a. Return -1.
  */
@@ -259,9 +264,14 @@ int ufs::Read_Char(char FileName[8]) {
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
-    if (TheNode->filename == FileName && TheNode->open == true) {
+    if (strcmp(TheNode->filename, FileName) == 0 && TheNode->open == true) {
       if (TheNode->owner_TID == pthread_self() || TheNode->permission[3] >= 4) {
-        char Read = Disk[TheNode->read++];
+        int Block_Index = TheNode->read / block_size;
+        int Offset = TheNode->read % block_size;
+        int Disk_Pos = (TheNode->blocks[Block_Index] * block_size) + Offset;
+
+        char Read = Disk[Disk_Pos];
+        TheNode->read++;
         *it = TheNode;
         return Read;
       }
@@ -277,7 +287,16 @@ int ufs::Read_Char(char FileName[8]) {
  *
  * Writes a char to the specified file's write pointer, if the file exists.
  *
- *
+ * 1. Find the node by name, if it exists.
+ *    1a. Return -1 if we cannot find it.
+ * 2. If we find a match an it is open,
+ *    2a. Check for permission to write...
+ *        a. If so, calculate the write pointer's disk position.
+ *        b. Write a char to disk.
+ *        c. Increment size and write pointers.
+ *        d. Return the written char.
+ * 3. Else,
+ *    3a. Return -1.
  */
 int ufs::Write_Char(char FileName[8], char Char) {
   INode *TheNode = nullptr;
@@ -285,13 +304,23 @@ int ufs::Write_Char(char FileName[8], char Char) {
   for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
     TheNode = *it;
 
-    if (TheNode->filename == FileName && TheNode->open == true) {
+    if (strcmp(TheNode->filename, FileName) == 0 && TheNode->open == true) {
       if (TheNode->owner_TID == pthread_self() ||
           (TheNode->permission[3] != 1 && TheNode->permission[3] != 4 &&
            TheNode->permission[3] != 5)) {
-        Disk[TheNode->write++] = Char;
-        *it = TheNode;
-        return Char;
+        int Block_Index = TheNode->write / block_size;
+        int Offset = TheNode->write % block_size;
+        int Disk_Pos = (TheNode->blocks[Block_Index] * block_size) + Offset;
+
+        if (Disk_Pos <= Disk.size()) {
+          Disk[Disk_Pos] = Char;
+          TheNode->size++;
+          TheNode->write++;
+          *it = TheNode;
+          return Char;
+        } else {
+          return -1;
+        }
       }
     } else if (distance(it, Nodes.end()) == 2) {
       return -1;
@@ -301,26 +330,168 @@ int ufs::Write_Char(char FileName[8], char Char) {
   return -1;
 }
 
-/*
+/* Create_File(FileName[8], Size, Permission[4]) {...}
+ *
+ * Creates a file with the specified Name, Size, and Permissions, if able.
+ *
+ * 1. Check that a file by that name doesn't already exist.
+ * 2. Check that we have space for a new file.
+ *    1a. If none, return -1.
+ * 3. Find free blocks in Blocks_Map.
+ *    2a. If a block is free, assign it.
+ * 4. Create the new I-Node, and push onto Nodes.
+ * 5. Return 1.
  */
-int ufs::Create_File(char FileName[8], int Size, int Permission[4]) {}
+int ufs::Create_File(char FileName[8], int Size, int Permission[4]) {
+  INode *TheNode = nullptr;
+  for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
+    TheNode = *it;
+    if (strcmp(TheNode->filename, FileName) == 0) {
+      return -1;
+    }
+  }
 
-/*
+  int Blocks_Needed = (Size + block_size - 1) / block_size;
+  if (Blocks_Needed > 4 || Nodes.size() >= 16) {
+    return -1;
+  }
+
+  int found = 0;
+  unsigned int assigned[4];
+  for (int i = 0; i < blocks_count && found < Blocks_Needed; i++) {
+    if (!Blocks_Map.test(i)) {
+      Blocks_Map.set(i);
+      assigned[found++] = i;
+    }
+  }
+
+  INode *DoneNode = new INode(FileName, Permission, assigned);
+  Nodes.push_back(DoneNode);
+
+  return 1;
+}
+
+/* Delete_File(FileName[8]) {...}
+ *
+ * Deletes a file with the specified name, if permissions allow.
+ *
+ * 1. Find the node by name, if it exists.
+ *    1a. Return -1 if we cannot find it, or permissions do not allow us to
+ *        delete it.
+ * 2. Wipe all contents held by that node on the disk.
+ * 3. Delete the node.
+ * 4. Return 1.
  */
-int ufs::Delete_File(char FileName[8]) {}
+int ufs::Delete_File(char FileName[8]) {
+  INode *TheNode = nullptr;
+  _List_iterator<ufs::INode *> NodeIterator = Nodes.begin();
 
-/*
+  for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
+    TheNode = *it;
+
+    if (strcmp(TheNode->filename, FileName) == 0) {
+      if (TheNode->owner_TID != pthread_self() &&
+          (TheNode->permission[3] == 1 || TheNode->permission[3] == 4 ||
+           TheNode->permission[3] == 5)) {
+        return -1;
+      }
+    } else if (distance(it, Nodes.end()) == 2) {
+      return -1;
+    }
+
+    NodeIterator = find(begin(Nodes), end(Nodes), TheNode);
+  }
+
+  for (int i = 0; i < 4; i++) {
+    int Disk_Pos = TheNode->blocks[i] * block_size;
+    for (int j = Disk_Pos; j < Disk_Pos + block_size; j++) {
+      Disk[j] = '$';
+    }
+  }
+
+  Nodes.erase(NodeIterator);
+  delete TheNode;
+
+  return 1;
+}
+
+/* Change_Permissions(FileName[8], Permission[4]) {...}
+ *
+ * Changes a file's permissions by name.
+ *
+ * 1. Find the node by name, if it exists.
+ *    1a. If found, set its permissions as given.
+ *        a. Return 1.
+ *    1b. Else, return -1.
+ * 2. Return -1.
  */
-int ufs::Change_Permissions(char FileName[8], int Permission[4]) {}
+int ufs::Change_Permissions(char FileName[8], int Permission[4]) {
+  INode *TheNode = nullptr;
 
-/*
+  for (auto it = Nodes.begin(); it != Nodes.end(); it++) {
+    TheNode = *it;
+
+    if (strcmp(TheNode->filename, FileName) == 0) {
+      for (int i = 0; i < 4; i++) {
+        TheNode->permission[i] = Permission[i];
+      }
+
+      return 1;
+    } else if (distance(it, Nodes.end()) == 2) {
+      return -1;
+    }
+  }
+
+  return -1;
+}
+
+/* Dir() {...}
+ *
+ * Shows the directory's contents.
  */
 void ufs::Dir() {}
 
-/*
+/* Task_Dir() {...}
+ *
+ * Shows just the contents of the director that this task owns.
  */
 void ufs::Task_Dir() {}
 
-/*
+/* Dump() {...}
+ *
+ * Pretty-prints the contents of UFS for viewing in the Ultima demo.
  */
-string ufs::Dump() {}
+string ufs::Dump() {
+  stringstream ss;
+
+  INode *TheNode = nullptr;
+
+  for (INode *Node : Nodes) {
+    TheNode = Node;
+    string Name = TheNode->filename;
+
+    ss << " ---------- File: " << Name << " ---------- " << endl;
+    ss << " Blocks used: ";
+
+    for (int i = 0; i < 4; i++) {
+      ss << TheNode->blocks[i];
+    }
+    ss << endl;
+
+    ss << " Size: " << TheNode->size << endl;
+    ss << " Start block: " << TheNode->blocks[0] << endl;
+    ss << " Is open: " << TheNode->open << endl;
+    ss << " Permissions: ";
+
+    for (int i = 0; i < 4; i++) {
+      ss << TheNode->permission[i];
+    }
+    ss << endl;
+
+    ss << " Owner: " << TheNode->owner_TID << endl;
+    ss << " Creation: " << TheNode->creation << endl;
+    ss << " Modified: " << TheNode->last_modified << endl;
+  }
+
+  return ss.str();
+}

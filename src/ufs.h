@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "Kernel.h"
+#include <bitset>
 #include <list>
 #include <string>
 #include <vector>
@@ -20,23 +22,24 @@ class ufs {
 private:
   struct INode {
     char filename[8];
-    int owner_TID, start_block, size, read, write, permission[4];
+    int owner_TID, size, read, write, permission[4];
     unsigned int blocks[4];
     time_t creation, last_modified;
     bool open;
 
     INode();
 
-    INode(char Name[8], int Permission[4], int Start, int Read, int Write,
-          unsigned int Blocks[4]);
+    INode(char Name[8], int Permission[4], unsigned int Blocks[4]);
   };
 
   static inline ufs *UFS_Ptr = nullptr;
+  static inline Scheduler *Scheduler_Ptr = nullptr;
   string fs_name;
   char init_char;
-  int block_size, blocks_count, next_handle;
+  int block_size, blocks_count;
   list<INode *> Nodes;
   vector<char> Disk;
+  bitset<16> Blocks_Map;
 
   enum Mode { R, W };
 
